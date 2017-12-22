@@ -77,6 +77,57 @@ foldLeft() {
   echo "$acc"
 }
 
+List() {
+  for e in "$@"
+  do
+    echo "$e"
+  done
+}
+
+Option() {
+  local var="$1"
+  if ! [ -z ${!var+x} ]
+  then
+    echo "${!var}"
+  fi
+}
+
+getOrElse() {
+  local e="$1"
+  local empty=true
+
+  while read -r
+  do
+    echo "$REPLY"
+    empty=false
+  done
+
+  if $empty
+  then
+    echo "$e"
+  fi
+}
+
+orElse() {
+  local f="$1"
+  local empty=true
+  shift
+
+  while read -r
+  do
+    echo "$REPLY"
+    empty=false
+  done
+
+  if $empty
+  then
+    "$f" $@ | while read -r
+    do
+      echo "$REPLY"
+    done
+  fi
+}
+
 printf "ab\nabc\nbcd\nbcde\nbcdef\nzyx\n" |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ a b) |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ) |
@@ -84,3 +135,8 @@ printf "ab\nabc\nbcd\nbcde\nbcdef\nzyx\n" |
   (λ(){ [[ "$1" == a* ]]; }; dropWhile λ) |
   (λ(){ echo "$1 $2"; }; foldLeft "a " λ) |
   cat
+
+#bvar=test
+echo a
+Option bvar | (λ(){ echo "abc"; echo "def"; }; orElse λ) | getOrElse other | cat
+echo c
