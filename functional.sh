@@ -95,6 +95,7 @@ Option() {
 getOrElse() {
   local e="$1"
   local empty=true
+  shift
 
   while read -r
   do
@@ -128,7 +129,61 @@ orElse() {
   fi
 }
 
-printf "ab\nabc\nbcd\nbcde\nbcdef\nzyx\n" |
+intersperse() {
+  local e="$1"
+  local first=true
+  shift
+
+  while read -r
+  do
+    if $first
+    then
+      first=false
+    else
+      echo "$e"
+    fi
+    echo "$REPLY"
+  done
+}
+
+mkString() {
+  local sep="$1"
+  shift
+
+  intersperse "$sep" | (λ(){ echo "$1$2"; }; foldLeft "" λ)
+}
+
+prepend() {
+  local f="$1"
+  shift
+
+  "$f" $@ | while read -r
+  do
+    echo "$REPLY"
+  done
+
+  while read -r
+  do
+    echo "$REPLY"
+  done
+}
+
+append() {
+  local f="$1"
+  shift
+
+  while read -r
+  do
+    echo "$REPLY"
+  done
+
+  "$f" $@ | while read -r
+  do
+    echo "$REPLY"
+  done
+}
+
+List ab abc bcd bcde bcdef zyx |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ a b) |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ) |
   (λ(){ [[ "$1" == *b* ]]; }; filter λ) |
@@ -140,3 +195,5 @@ printf "ab\nabc\nbcd\nbcde\nbcdef\nzyx\n" |
 echo a
 Option bvar | (λ(){ echo "abc"; echo "def"; }; orElse λ) | getOrElse other | cat
 echo c
+echo "---"
+List a bcd ef | intersperse "=" | (λ(){ List end; }; prepend λ) | mkString " "
