@@ -65,17 +65,13 @@ dropWhile() {
 }
 
 foldLeft() {
-  local acc="$1"
-  shift
-  local f="$1"
-  shift
+  local f="$2"
+  acc="$1"
+  shift 2
 
   while read -r
   do
-    echo $REPLY
-    acc=$(("$f" "$acc" "$REPLY" $@))
-    echo $acc
-    echo "."
+    acc=$("$f" "$acc" "$REPLY" $@)
   done
 
   echo $acc
