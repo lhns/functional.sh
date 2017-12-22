@@ -51,8 +51,8 @@ takeWhile() {
 
 dropWhile() {
   local f="$1"
-  shift
   local take=false
+  shift
 
   while read -r
   do
@@ -65,8 +65,8 @@ dropWhile() {
 }
 
 foldLeft() {
+  local acc="$1"
   local f="$2"
-  acc="$1"
   shift 2
 
   while read -r
@@ -74,10 +74,10 @@ foldLeft() {
     acc=$("$f" "$acc" "$REPLY" $@)
   done
 
-  echo $acc
+  echo "$acc"
 }
 
-printf "ab\nabc\nbcd\nbcde\nzyx\n" |
+printf "ab\nabc\nbcd\nbcde\nbcdef\nzyx\n" |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ a b) |
   #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ) |
   (λ(){ [[ "$1" == *b* ]]; }; filter λ) |
