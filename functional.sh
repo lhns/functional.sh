@@ -1,20 +1,20 @@
 map() {
-  local f="$1"
+  local _func="$1"
   shift
 
   while read -r
   do
-    eval "$f \"$REPLY\" $@"
+    eval "$_func \"$REPLY\" $@"
   done
 }
 
 filter() {
-  local f="$1"
+  local _func="$1"
   shift
 
   while read -r
   do
-    if $(eval "$f \"$REPLY\" $@")
+    if $(eval "$_func \"$REPLY\" $@")
     then
       echo "$REPLY"
     fi
@@ -22,10 +22,10 @@ filter() {
 }
 
 filterNot() {
-  local f="$1"
+  local _func="$1"
   shift
 
-  filter "! $f"
+  filter "! $_func"
 }
 
 #alsoTo
@@ -108,8 +108,8 @@ tail() {
   dropLeft
 }
 
-sortBy() {(
-  local f="$1"
+sortBy() {
+  local _func2="$1"
   shift
 
   local buffer[0]=""
@@ -123,34 +123,26 @@ sortBy() {(
 
   Array buffer 0 $length |
     zipWithIndex |
-    (λ1(){
+    (_lambda(){
       local i=$(List $1 | last)
       local e=$(String "$1" | dropRight $(( $(String "$i" | length) + 1 )) | mkString)
-      echo 1
-      eval "$f"
-      echo 2
-      echo "$r $i"
-    }; map λ1)
-    #sorted
-    #(λ(){
-    #  local i=$(List $1 | last)
-    #  echo "${buffer[$i]}"
-    #}; map λ)
-
-  #while (( length > 0 ))
-  #do
-  #  length=$(( $length - 1 ))
-  #  echo "${buffer[$length]}"
-  #done
-)}
+      local by=$(eval "$_func2 \"$e\" $@")
+      echo "$by $i"
+    }; map _lambda) |
+    sorted |
+    (λ(){
+      local i=$(List $1 | last)
+      echo "${buffer[$i]}"
+    }; map λ)
+}
 
 takeWhile() {
-  local f="$1"
+  local _func="$1"
   shift
 
   while read -r
   do
-    if $(eval "$f \"$REPLY\" $@")
+    if $(eval "$_func \"$REPLY\" $@")
     then
       echo "$REPLY"
     else
@@ -160,13 +152,13 @@ takeWhile() {
 }
 
 dropWhile() {
-  local f="$1"
+  local _func="$1"
   local take=false
   shift
 
   while read -r
   do
-    if $take || ! $(eval "$f \"$REPLY\" $@")
+    if $take || ! $(eval "$_func \"$REPLY\" $@")
     then
       take=true
       echo "$REPLY"
@@ -272,12 +264,12 @@ reverse() {
 
 foldLeft() {
   local acc="$1"
-  local f="$2"
+  local _func="$2"
   shift 2
 
   while read -r
   do
-    acc=$(eval "$f \"$acc\" \"$REPLY\" $@")
+    acc=$(eval "$_func \"$acc\" \"$REPLY\" $@")
   done
 
   echo "$acc"
@@ -286,7 +278,7 @@ foldLeft() {
 Array() {
   local arr="$1"
   local off=$(Option "$2" | getOrElse 0)
-  local len=$(Option "$3" | (λ2(){ eval echo $\{#$arr[@]\}; }; orElse λ2))
+  local len=$(Option "$3" | (λ(){ eval echo $\{#$arr[@]\}; }; orElse λ))
   shift
 
   for i in $(seq $off $(( $off + $len - 1 )))
@@ -349,12 +341,12 @@ getOrElse() {
 }
 
 orElse() {
-  local f="$1"
+  local _func="$1"
   shift
 
   if isEmpty
   then
-    eval "$f $@" | while read -r
+    eval "$_func $@" | while read -r
     do
       echo "$REPLY"
     done
@@ -382,14 +374,14 @@ mkString() {
   local sep="$1"
   shift
 
-  intersperse "$sep" | (λ3(){ echo "$1$2"; }; foldLeft "" λ3)
+  intersperse "$sep" | (λ(){ echo "$1$2"; }; foldLeft "" λ)
 }
 
 prepend() {
-  local f="$1"
+  local _func="$1"
   shift
 
-  eval "$f $@" | while read -r
+  eval "$_func $@" | while read -r
   do
     echo "$REPLY"
   done
@@ -401,7 +393,7 @@ prepend() {
 }
 
 append() {
-  local f="$1"
+  local _func="$1"
   shift
 
   while read -r
@@ -409,7 +401,7 @@ append() {
     echo "$REPLY"
   done
 
-  eval "$f $@" | while read -r
+  eval "$_func $@" | while read -r
   do
     echo "$REPLY"
   done
@@ -436,4 +428,4 @@ a[0]=a2
 a[1]=s1
 a[2]=d6
 a[3]=f3
-Array a | (λ(){ echo "test"; }; sortBy λ)
+Array a | (λ(){ String "$1" | last; }; sortBy λ)
