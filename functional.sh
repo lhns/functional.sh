@@ -1,3 +1,81 @@
+List() {
+  for e in "$@"
+  do
+    echo "$e"
+  done
+}
+
+Option() {
+  local e="$1"
+  if ! [ -z "$e" ]
+  then
+    echo "$e"
+  fi
+}
+
+Defined() {
+  local var="$1"
+  if ! [ -z ${!var+x} ]
+  then
+    echo "${!var}"
+  fi
+}
+
+Array() {
+  local arr="$1"
+  local off=$(Option "$2" | getOrElse 0)
+  local len=$(Option "$3" | (λ(){ eval echo $\{#$arr[@]\}; }; orElse λ))
+  shift
+
+  for i in $(seq $off $(( $off + $len - 1 )))
+  do
+    local elem=$arr[$i]
+    echo "${!elem}"
+  done
+}
+
+String() {
+  local str="$1"
+  shift
+
+  printf "$str" | sed -e 's/\(.\)/\1\n/g'
+}
+
+isEmpty() {
+  local empty=true
+
+  while read -r
+  do
+    echo "$REPLY"
+    empty=false
+  done
+
+  $empty
+}
+
+getOrElse() {
+  local val="$1"
+  shift
+
+  if isEmpty
+  then
+    echo "$val"
+  fi
+}
+
+orElse() {
+  local _func="$1"
+  shift
+
+  if isEmpty
+  then
+    eval "$_func $@" | while read -r
+    do
+      echo "$REPLY"
+    done
+  fi
+}
+
 map() {
   local _func="$1"
   shift
@@ -28,8 +106,6 @@ filterNot() {
   filter "! $_func"
 }
 
-#alsoTo
-
 length() {
   local length=0
 
@@ -54,13 +130,13 @@ get() {
 }
 
 indexOf() {
-  local e="$1"
+  local elem="$1"
   shift
 
   local i=0
   while read -r
   do
-    if [ "$REPLY" == "$e" ]; then echo $i; fi
+    if [ "$REPLY" == "$elem" ]; then echo $i; fi
     i=$(( $i+1 ))
   done
 }
@@ -134,36 +210,6 @@ sortBy() {
       local i=$(List $1 | last)
       echo "${buffer[$i]}"
     }; map λ)
-}
-
-takeWhile() {
-  local _func="$1"
-  shift
-
-  while read -r
-  do
-    if $(eval "$_func \"$REPLY\" $@")
-    then
-      echo "$REPLY"
-    else
-      break
-    fi
-  done
-}
-
-dropWhile() {
-  local _func="$1"
-  local take=false
-  shift
-
-  while read -r
-  do
-    if $take || ! $(eval "$_func \"$REPLY\" $@")
-    then
-      take=true
-      echo "$REPLY"
-    fi
-  done
 }
 
 takeLeft() {
@@ -245,6 +291,36 @@ dropRight() {
   fi
 }
 
+takeWhile() {
+  local _func="$1"
+  shift
+
+  while read -r
+  do
+    if $(eval "$_func \"$REPLY\" $@")
+    then
+      echo "$REPLY"
+    else
+      break
+    fi
+  done
+}
+
+dropWhile() {
+  local _func="$1"
+  local take=false
+  shift
+
+  while read -r
+  do
+    if $take || ! $(eval "$_func \"$REPLY\" $@")
+    then
+      take=true
+      echo "$REPLY"
+    fi
+  done
+}
+
 reverse() {
   local buffer[0]=""
   local length=0
@@ -275,86 +351,8 @@ foldLeft() {
   echo "$acc"
 }
 
-Array() {
-  local arr="$1"
-  local off=$(Option "$2" | getOrElse 0)
-  local len=$(Option "$3" | (λ(){ eval echo $\{#$arr[@]\}; }; orElse λ))
-  shift
-
-  for i in $(seq $off $(( $off + $len - 1 )))
-  do
-    local elem=$arr[$i]
-    echo "${!elem}"
-  done
-}
-
-String() {
-  local str="$1"
-  shift
-
-  printf "$str" | sed -e 's/\(.\)/\1\n/g'
-}
-
-List() {
-  for e in "$@"
-  do
-    echo "$e"
-  done
-}
-
-Defined() {
-  local var="$1"
-  if ! [ -z ${!var+x} ]
-  then
-    echo "${!var}"
-  fi
-}
-
-Option() {
-  local e="$1"
-  if ! [ -z "$e" ]
-  then
-    echo "$e"
-  fi
-}
-
-isEmpty() {
-  local empty=true
-
-  while read -r
-  do
-    echo "$REPLY"
-    empty=false
-  done
-
-  $empty
-}
-
-getOrElse() {
-  local e="$1"
-  shift
-
-  if isEmpty
-  then
-    echo "$e"
-  fi
-}
-
-orElse() {
-  local _func="$1"
-  shift
-
-  if isEmpty
-  then
-    eval "$_func $@" | while read -r
-    do
-      echo "$REPLY"
-    done
-  fi
-}
-
 intersperse() {
-  local e="$1"
+  local elem="$1"
   local first=true
   shift
 
@@ -364,7 +362,7 @@ intersperse() {
     then
       first=false
     else
-      echo "$e"
+      echo "$elem"
     fi
     echo "$REPLY"
   done
