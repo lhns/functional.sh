@@ -47,6 +47,86 @@ length() {
   echo $length
 }
 
+get() {
+  local index="$1"
+  shift
+
+  local i=0
+  while read -r
+  do
+    if (( $i == $index )); then echo "$REPLY"; fi
+    i=$(( $i+1 ))
+  done
+}
+
+indexOf() {
+  local e="$1"
+  shift
+
+  local i=0
+  while read -r
+  do
+    if [ "$REPLY" == "$e" ]; then echo $i; fi
+    i=$(( $i+1 ))
+  done
+}
+
+zipWithIndex() {
+  local i=0
+  while read -r
+  do
+    echo "$i $REPLY"
+    i=$(( i + 1 ))
+  done
+}
+
+grouped() {
+  local size=$1
+  shift
+
+  if [ -z $size ]; then size=2; fi
+
+  local buffer[0]=""
+  local length=0
+  while read -r
+  do
+    buffer[$length]="$REPLY"
+    length=$(( $length + 1 ))
+    if (( $length >= $size ))
+    then
+      Array buffer 0 length | mkString " "
+      length=0
+    fi
+  done
+}
+
+sortBy() {
+  local f="$1"
+  shift
+
+  local buffer[0]=""
+  local length=0
+
+  while read -r
+  do
+    buffer[$length]="$REPLY"
+    length=$(( $length + 1 ))
+  done
+
+  Array buffer 0 $length |
+    zipWithIndex |
+    (λ(){
+      local i=$(String $1 | (λ(){ [ "$1" != " " ]; }; takeWhile λ) | mkString)
+      echo $i
+    }; map λ)
+
+  #while (( length > 0 ))
+  #do
+  #  length=$(( $length - 1 ))
+  #  echo "${buffer[$length]}"
+  #done
+}
+
 takeWhile() {
   local f="$1"
   shift
@@ -117,7 +197,6 @@ takeRight() {
     local buffer[0]=""
     local pointer=-1
     local length=0
-
     while read -r
     do
       pointer=$(( ($pointer + 1) % $take ))
@@ -144,7 +223,6 @@ dropRight() {
     local buffer[0]=""
     local pointer=-1
     local length=0
-
     while read -r
     do
       pointer=$(( ($pointer + 1) % $drop ))
@@ -159,6 +237,7 @@ dropRight() {
 }
 
 reverse() {
+  local buffer[0]=""
   local length=0
 
   while read -r
@@ -185,6 +264,23 @@ foldLeft() {
   done
 
   echo "$acc"
+}
+
+Array() {
+  local arr="$1"
+  local off="$2"
+  local len="$3"
+  shift
+
+  if [ -z $off ]; then off=0; fi
+  local length=$(eval echo $\{#$arr[@]\})
+  if [ -z $len ]; then len=$length; fi
+
+  for i in $(seq $off $(( $off + $len - 1 )))
+  do
+    local elem=$arr[$i]
+    echo "${!elem}"
+  done
 }
 
 String() {
@@ -316,3 +412,9 @@ echo "---"
 List a bcd ef | intersperse "=" | (λ(){ List end; }; prepend λ) | mkString " "
 echo "---"
 String "asdf" | reverse | mkString
+echo "---"
+a[0]=a
+a[1]=s
+a[2]=d
+a[3]=f
+Array a | sortBy
