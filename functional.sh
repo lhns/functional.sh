@@ -34,6 +34,19 @@ filterNot() {
   done
 }
 
+#alsoTo
+
+length() {
+  local length=0
+
+  while read -r
+  do
+    length=$(( $length+1 ))
+  done
+
+  echo $length
+}
+
 takeWhile() {
   local f="$1"
   shift
@@ -64,6 +77,103 @@ dropWhile() {
   done
 }
 
+takeLeft() {
+  local take="$1"
+  shift
+
+  while read -r
+  do
+    if (( $take > 0 ))
+    then
+      echo "$REPLY"
+    else
+      break
+    fi
+    take=$(( $take - 1 ))
+  done
+}
+
+dropLeft() {
+  local drop="$1"
+  shift
+
+  while read -r
+  do
+    if (( $drop > 0 ))
+    then
+      drop=$(( $drop - 1 ))
+    else
+      echo "$REPLY"
+    fi
+  done
+}
+
+takeRight() {
+  local take="$1"
+  shift
+
+  if (( $take > 0 ))
+  then
+    local buffer[0]=""
+    local pointer=-1
+    local length=0
+
+    while read -r
+    do
+      pointer=$(( ($pointer + 1) % $take ))
+      buffer[$pointer]="$REPLY"
+      if (( $length < $take )); then length=$(( $length + 1 )); fi
+    done
+
+    for i in $(seq 1 $length)
+    do
+      pointer=$(( ($pointer + 1) % $length ))
+      echo "${buffer[$pointer]}"
+    done
+  fi
+}
+
+dropRight() {
+  local drop="$1"
+  shift
+
+  if (( $drop <= 0 ))
+  then
+    cat
+  else
+    local buffer[0]=""
+    local pointer=-1
+    local length=0
+
+    while read -r
+    do
+      pointer=$(( ($pointer + 1) % $drop ))
+      if (( $pointer < $length ))
+      then
+        echo ${buffer[$pointer]}
+      fi
+      buffer[$pointer]="$REPLY"
+      if (( $length < $drop )); then length=$(( $length + 1 )); fi
+    done
+  fi
+}
+
+reverse() {
+  local length=0
+
+  while read -r
+  do
+    buffer[$length]="$REPLY"
+    length=$(( $length + 1 ))
+  done
+
+  while (( length > 0 ))
+  do
+    length=$(( $length - 1 ))
+    echo "${buffer[$length]}"
+  done
+}
+
 foldLeft() {
   local acc="$1"
   local f="$2"
@@ -75,6 +185,13 @@ foldLeft() {
   done
 
   echo "$acc"
+}
+
+String() {
+  local str="$1"
+  shift
+
+  printf "$str" | sed -e 's/\(.\)/\1\n/g'
 }
 
 List() {
@@ -197,3 +314,5 @@ Option bvar | (λ(){ echo "abc"; echo "def"; }; orElse λ) | getOrElse other | c
 echo c
 echo "---"
 List a bcd ef | intersperse "=" | (λ(){ List end; }; prepend λ) | mkString " "
+echo "---"
+String "asdf" | reverse | mkString
