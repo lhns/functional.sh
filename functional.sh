@@ -1,7 +1,7 @@
 List() {
-  for _e in "$@"
+  for _elem in "$@"
   do
-    echo "$_e"
+    echo "$_elem"
   done
 }
 
