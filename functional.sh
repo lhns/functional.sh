@@ -8,6 +8,10 @@ println() {
   printf '%s\n' "$1"
 }
 
+trim() {
+  sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
 Chars() {
   local _string="$1"
 
@@ -449,14 +453,18 @@ append() {
 
 mkString() {
   local _sep="$1"
+  local _start="$2"
+  local _end="$3"
 
-  intersperse "$_sep" | (λ(){ println "$1$2"; }; foldLeft "" λ)
+  intersperse "$_sep" |
+    (λ(){ println "$_end"; }; append λ) |
+    (λ(){ println "$1$2"; }; foldLeft "$_start" λ)
 }
 
 toString() {
-  mkString ""
+  mkString "" "" ""
 }
 
 toList() {
-  mkString " "
+  mkString " " "" ""
 }
