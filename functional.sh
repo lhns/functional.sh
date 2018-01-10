@@ -1,15 +1,11 @@
 Chars() {
   local _string="$1"
-  shift
 
   printf "$_string" | sed -e 's/\(.\)/\1\n/g'
 }
 
 List() {
-  local _elems="$@"
-  shift
-
-  for _elem in "$elems"
+  for _elem in "$@"
   do
     echo "$_elem"
   done
@@ -17,7 +13,6 @@ List() {
 
 Option() {
   local _elem="$@"
-  shift
 
   if ! [ -z "$_elem" ]
   then
@@ -27,7 +22,6 @@ Option() {
 
 Variable() {
   local _variable="$1"
-  shift
 
   if ! [ -z ${!_variable+x} ]
   then
@@ -39,7 +33,6 @@ Array() {
   local _arr="$1"
   local _off=$(Option "$2" | getOrElse 0)
   local _len=$(Option "$3" | (λ(){ eval echo $\{#$_arr[@]\}; }; orElse λ))
-  shift 3
 
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
@@ -77,7 +70,6 @@ isEmpty() {
 
 getOrElse() {
   local _elem="$1"
-  shift
 
   if isEmpty
   then
@@ -87,11 +79,10 @@ getOrElse() {
 
 orElse() {
   local _func="$1"
-  shift
 
   if isEmpty
   then
-    eval "$_func $@" | while read -r
+    eval "$_func" | while read -r
     do
       echo "$REPLY"
     done
@@ -100,21 +91,19 @@ orElse() {
 
 map() {
   local _func="$1"
-  shift
 
   while read -r
   do
-    (eval "$_func \"$REPLY\" $@")
+    (eval "$_func \"$REPLY\"")
   done
 }
 
 filter() {
   local _func="$1"
-  shift
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\" $@")
+    if $(eval "$_func \"$REPLY\"")
     then
       echo "$REPLY"
     fi
@@ -123,7 +112,6 @@ filter() {
 
 filterNot() {
   local _func="$1"
-  shift
 
   filter "! $_func"
 }
@@ -151,7 +139,6 @@ length() {
 
 get() {
   local _index="$1"
-  shift
 
   local _i=0
   while read -r
@@ -163,7 +150,6 @@ get() {
 
 indexOf() {
   local _elem="$1"
-  shift
 
   local _i=0
   while read -r
@@ -184,19 +170,17 @@ zipWithIndex() {
 
 zipWith() {
   local _func="$1"
-  shift
 
   while read -r
   do
     local _elem=$REPLY
-    eval "$_func \"$_elem\" $@" |
+    eval "$_func \"$_elem\"" |
       (λ(){ echo "$_elem $1"; }; map λ)
   done
 }
 
 grouped() {
   local _size=$(Option "$1" | getOrElse 2)
-  shift
 
   local _buffer[0]=""
   local _length=0
@@ -214,7 +198,6 @@ grouped() {
 
 split() {
   local _sep="$1"
-  shift
 
   while read -r
   do
@@ -244,7 +227,6 @@ tail() {
 
 sortBy() {
   local _func2="$1"
-  shift
 
   local _buffer[0]=""
   local _length=0
@@ -259,7 +241,7 @@ sortBy() {
     (_lambda(){
       local _i=$(List $1 | last)
       local _e=$(Chars "$1" | dropRight $(( $(Chars "$_i" | length) + 1 )) | mkString)
-      local _by=$(eval "$_func2 \"$_e\" $@")
+      local _by=$(eval "$_func2 \"$_e\"")
       echo "$_by $_i"
     }; map _lambda) |
     sorted |
@@ -271,7 +253,6 @@ sortBy() {
 
 takeLeft() {
   local _take=$(Option "$1" | getOrElse 1)
-  shift
 
   while read -r
   do
@@ -287,7 +268,6 @@ takeLeft() {
 
 dropLeft() {
   local _drop=$(Option "$1" | getOrElse 1)
-  shift
 
   while read -r
   do
@@ -302,7 +282,6 @@ dropLeft() {
 
 takeRight() {
   local _take=$(Option "$1" | getOrElse 1)
-  shift
 
   if (( $_take > 0 ))
   then
@@ -326,7 +305,6 @@ takeRight() {
 
 dropRight() {
   local _drop=$(Option "$1" | getOrElse 1)
-  shift
 
   if (( $_drop <= 0 ))
   then
@@ -350,11 +328,10 @@ dropRight() {
 
 takeWhile() {
   local _func="$1"
-  shift
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\" $@")
+    if $(eval "$_func \"$REPLY\"")
     then
       echo "$REPLY"
     else
@@ -365,12 +342,11 @@ takeWhile() {
 
 dropWhile() {
   local _func="$1"
-  local _take=false
-  shift
 
+  local _take=false
   while read -r
   do
-    if $_take || ! $(eval "$_func \"$REPLY\" $@")
+    if $_take || ! $(eval "$_func \"$REPLY\"")
     then
       _take=true
       echo "$REPLY"
@@ -398,11 +374,10 @@ reverse() {
 foldLeft() {
   local _acc="$1"
   local _func="$2"
-  shift 2
 
   while read -r
   do
-    _acc=$(eval "$_func \"$_acc\" \"$REPLY\" $@")
+    _acc=$(eval "$_func \"$_acc\" \"$REPLY\"")
   done
 
   echo "$_acc"
@@ -410,7 +385,6 @@ foldLeft() {
 
 intersperse() {
   local _elem="$1"
-  shift
 
   local _first=true
   while read -r
@@ -427,9 +401,8 @@ intersperse() {
 
 prepend() {
   local _func="$1"
-  shift
 
-  eval "$_func $@" | while read -r
+  eval "$_func" | while read -r
   do
     echo "$REPLY"
   done
@@ -442,14 +415,13 @@ prepend() {
 
 append() {
   local _func="$1"
-  shift
 
   while read -r
   do
     echo "$REPLY"
   done
 
-  eval "$_func $@" | while read -r
+  eval "$_func" | while read -r
   do
     echo "$REPLY"
   done
@@ -457,7 +429,6 @@ append() {
 
 mkString() {
   local _sep="$1"
-  shift
 
   intersperse "$_sep" | (λ(){ echo "$1$2"; }; foldLeft "" λ)
 }
