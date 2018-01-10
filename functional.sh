@@ -6,7 +6,7 @@ Chars() {
 }
 
 List() {
-  for _elem in $@
+  for _elem in "$@"
   do
     echo "$_elem"
   done
@@ -203,14 +203,14 @@ sortBy() {
   Array _buffer 0 $_length |
     zipWithIndex |
     (_lambda(){
-      local _i=$(List "$1" | last)
+      local _i=$(List $1 | last)
       local _e=$(Chars "$1" | dropRight $(( $(Chars "$_i" | length) + 1 )) | mkString)
       local _by=$(eval "$_func2 \"$_e\" $@")
       echo "$_by $_i"
     }; map _lambda) |
     sorted |
     (λ(){
-      local _i=$(List "$1" | last)
+      local _i=$(List $1 | last)
       echo "${_buffer[$_i]}"
     }; map λ)
 }
