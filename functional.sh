@@ -30,6 +30,12 @@ Option() {
   fi
 }
 
+File() {
+  local _path="$1"
+
+  cat "$_path"
+}
+
 Variable() {
   local _variable="$1"
 
