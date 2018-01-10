@@ -14,10 +14,10 @@ Option() {
 }
 
 Defined() {
-  local _var="$1"
-  if ! [ -z ${!_var+x} ]
+  local _variable="$1"
+  if ! [ -z ${!_variable+x} ]
   then
-    echo "${!_var}"
+    echo "${!_variable}"
   fi
 }
 
@@ -35,10 +35,10 @@ Array() {
 }
 
 Chars() {
-  local _str="$1"
+  local _string="$1"
   shift
 
-  printf "$_str" | sed -e 's/\(.\)/\1\n/g'
+  printf "$_string" | sed -e 's/\(.\)/\1\n/g'
 }
 
 isEmpty() {
@@ -54,12 +54,12 @@ isEmpty() {
 }
 
 getOrElse() {
-  local _val="$1"
+  local _elem="$1"
   shift
 
   if isEmpty
   then
-    echo "$_val"
+    echo "$_elem"
   fi
 }
 
@@ -403,27 +403,3 @@ append() {
     echo "$REPLY"
   done
 }
-
-List ab abc bcd bcde bcdef zyx |
-  #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ a b) |
-  #(λ(){ echo "Lambda sees $1 and $2 and $3"; }; map λ) |
-  (λ(){ [[ "$1" == *b* ]]; }; filter λ) |
-  (λ(){ [[ "$1" == a* ]]; }; dropWhile λ) |
-  (λ(){ echo "$1 $2"; }; foldLeft "a " λ) |
-  cat
-
-#bvar=test
-echo a
-Option bvar | (λ(){ echo "abc"; echo "def"; }; orElse λ) | getOrElse other | cat
-echo c
-echo "---"
-List a bcd ef | intersperse "=" | (λ(){ List end; }; prepend λ) | mkString " "
-echo "---"
-Chars "asdf" | reverse | mkString
-echo "---"
-a[0]=abcdefg
-a[1]=hans
-a[2]=wurst
-a[3]=test
-Array a | (λ(){ Chars "$1" | length; }; sortBy λ)
-Option a b c d e f | getOrElse test
