@@ -51,19 +51,6 @@ Array() {
   done
 }
 
-startscope() {
-  if [ -z "$scope" ]
-  then
-    scope=1
-  else
-    scope=$(( $scope + 1 ))
-  fi
-}
-
-endscope() {
-  scope=$(( $scope - 1 ))
-}
-
 isEmpty() {
   local _empty=true
 
