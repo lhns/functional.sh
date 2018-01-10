@@ -350,7 +350,6 @@ dropWhile() {
 reverse() {
   local _buffer[0]=""
   local _length=0
-
   while read -r
   do
     _buffer[$_length]="$REPLY"
@@ -361,6 +360,28 @@ reverse() {
   do
     _length=$(( $_length - 1 ))
     println "${_buffer[$_length]}"
+  done
+}
+
+repeat() {
+  local times="$1"
+
+  local _buffer[0]=""
+  local _length=0
+  while read -r
+  do
+    _buffer[$_length]="$REPLY"
+    _length=$(( $_length + 1 ))
+  done
+
+  for _i in $(seq 1 $times)
+  do
+    local _index=0
+    while (( _index < _length ))
+    do
+      println "${_buffer[$_index]}"
+      _index=$(( $_index + 1 ))
+    done
   done
 }
 
