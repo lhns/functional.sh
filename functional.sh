@@ -1,3 +1,10 @@
+Chars() {
+  local _string="$1"
+  shift
+
+  printf "$_string" | sed -e 's/\(.\)/\1\n/g'
+}
+
 List() {
   for _elem in "$@"
   do
@@ -13,7 +20,7 @@ Option() {
   fi
 }
 
-Defined() {
+Variable() {
   local _variable="$1"
   if ! [ -z ${!_variable+x} ]
   then
@@ -32,13 +39,6 @@ Array() {
     local _elem=$_arr[$_i]
     echo "${!_elem}"
   done
-}
-
-Chars() {
-  local _string="$1"
-  shift
-
-  printf "$_string" | sed -e 's/\(.\)/\1\n/g'
 }
 
 isEmpty() {
@@ -367,13 +367,6 @@ intersperse() {
   done
 }
 
-mkString() {
-  local _sep="$1"
-  shift
-
-  intersperse "$_sep" | (λ(){ echo "$1$2"; }; foldLeft "" λ)
-}
-
 prepend() {
   local _func="$1"
   shift
@@ -402,4 +395,19 @@ append() {
   do
     echo "$REPLY"
   done
+}
+
+mkString() {
+  local _sep="$1"
+  shift
+
+  intersperse "$_sep" | (λ(){ echo "$1$2"; }; foldLeft "" λ)
+}
+
+toString() {
+  mkString ""
+}
+
+toList() {
+  mkString " "
 }
