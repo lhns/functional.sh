@@ -208,11 +208,11 @@ sorted() {
 }
 
 first() {
-  takeLeft 1
+  take 1
 }
 
 head() {
-  takeLeft 1
+  take 1
 }
 
 last() {
@@ -220,7 +220,7 @@ last() {
 }
 
 tail() {
-  dropLeft 1
+  drop 1
 }
 
 sortBy() {
@@ -250,7 +250,7 @@ sortBy() {
     }; map λ)
 }
 
-takeLeft() {
+take() {
   local _take=$(Option "$1" | getOrElse 1)
 
   while read -r
@@ -265,7 +265,7 @@ takeLeft() {
   done
 }
 
-dropLeft() {
+drop() {
   local _drop=$(Option "$1" | getOrElse 1)
 
   while read -r
