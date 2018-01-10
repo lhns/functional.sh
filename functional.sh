@@ -173,15 +173,19 @@ sorted() {
 }
 
 first() {
-  takeLeft
+  takeLeft 1
+}
+
+head() {
+  takeLeft 1
 }
 
 last() {
-  takeRight
+  takeRight 1
 }
 
 tail() {
-  dropLeft
+  dropLeft 1
 }
 
 sortBy() {
@@ -235,7 +239,7 @@ dropLeft() {
   do
     if (( $_drop > 0 ))
     then
-      drop=$(( $_drop - 1 ))
+      _drop=$(( $_drop - 1 ))
     else
       echo "$REPLY"
     fi
