@@ -82,10 +82,7 @@ orElse() {
 
   if isEmpty
   then
-    eval "$_func" | while read -r
-    do
-      echo "$REPLY"
-    done
+    (eval "$_func")
   fi
 }
 
