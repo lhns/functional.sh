@@ -1,13 +1,23 @@
+newline=$'\n'
+
+print() {
+  printf '%s' "$1"
+}
+
+println() {
+  printf '%s\n' "$1"
+}
+
 Chars() {
   local _string="$1"
 
-  printf "$_string" | sed -e 's/\(.\)/\1\n/g'
+  print "$_string" | sed -e 's/\(.\)/\1\n/g'
 }
 
 List() {
   for _elem in "$@"
   do
-    printf '%s\n' "$_elem"
+    println "$_elem"
   done
 }
 
@@ -16,7 +26,7 @@ Option() {
 
   if ! [ -z "$_elem" ]
   then
-    printf '%s\n' "$_elem"
+    println "$_elem"
   fi
 }
 
@@ -25,23 +35,21 @@ Variable() {
 
   if ! [ -z ${!_variable+x} ]
   then
-    printf '%s\n' "${!_variable}"
+    println "${!_variable}"
   fi
 }
 
 Array() {
   local _arr="$1"
   local _off=$(Option "$2" | getOrElse 0)
-  local _len=$(Option "$3" | (λ(){ eval echo $\{#$_arr[@]\}; }; orElse λ))
+  local _len=$(Option "$3" | (λ(){ eval println $\{#$_arr[@]\}; }; orElse λ))
 
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
     local _elem=$_arr[$_i]
-    printf '%s\n' "${!_elem}"
+    println "${!_elem}"
   done
 }
-
-newline=$'\n'
 
 startscope() {
   if [ -z "$scope" ]
@@ -61,7 +69,7 @@ isEmpty() {
 
   while read -r
   do
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
     _empty=false
   done
 
@@ -73,7 +81,7 @@ getOrElse() {
 
   if isEmpty
   then
-    printf '%s\n' "$_elem"
+    println "$_elem"
   fi
 }
 
@@ -102,7 +110,7 @@ filter() {
   do
     if $(eval "$_func \"$REPLY\"")
     then
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -118,7 +126,7 @@ nonEmpty() {
   do
     if ! [ -z "$REPLY" ]
     then
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -131,7 +139,7 @@ length() {
     _length=$(( $_length + 1 ))
   done
 
-  echo $_length
+  println $_length
 }
 
 get() {
@@ -140,7 +148,7 @@ get() {
   local _i=0
   while read -r
   do
-    if (( $_i == $_index )); then printf '%s\n' "$REPLY"; fi
+    if (( $_i == $_index )); then println "$REPLY"; fi
     _i=$(( $_i + 1 ))
   done
 }
@@ -151,7 +159,7 @@ indexOf() {
   local _i=0
   while read -r
   do
-    if [ "$REPLY" == "$_elem" ]; then echo $_i; fi
+    if [ "$REPLY" == "$_elem" ]; then println $_i; fi
     _i=$(( $_i + 1 ))
   done
 }
@@ -160,7 +168,7 @@ zipWithIndex() {
   local _i=0
   while read -r
   do
-    printf '%s\n' "$REPLY $_i"
+    println "$REPLY $_i"
     _i=$(( $_i + 1 ))
   done
 }
@@ -172,7 +180,7 @@ zipWith() {
   do
     local _elem=$REPLY
     eval "$_func \"$_elem\"" |
-      (λ(){ printf '%s\n' "$_elem $1"; }; map λ)
+      (λ(){ println "$_elem $1"; }; map λ)
   done
 }
 
@@ -198,7 +206,7 @@ split() {
 
   while read -r
   do
-    printf '%s\n' "${REPLY//$_sep/$newline}"
+    println "${REPLY//$_sep/$newline}"
   done
 }
 
@@ -240,12 +248,12 @@ sortBy() {
       local _i=$(List $1 | last)
       local _e=$(Chars "$1" | dropRight $(( $(Chars "$_i" | length) + 1 )) | mkString)
       local _by=$(eval "$_func2 \"$_e\"")
-      printf '%s\n' "$_by $_i"
+      println "$_by $_i"
     }; map _lambda) |
     sorted -k1,1 $_options |
     (λ(){
       local _i=$(List $1 | last)
-      printf '%s\n' "${_buffer[$_i]}"
+      println "${_buffer[$_i]}"
     }; map λ)
 }
 
@@ -256,7 +264,7 @@ takeLeft() {
   do
     if (( $_take > 0 ))
     then
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     else
       break
     fi
@@ -273,7 +281,7 @@ dropLeft() {
     then
       _drop=$(( $_drop - 1 ))
     else
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -296,7 +304,7 @@ takeRight() {
     for i in $(seq 1 $_length)
     do
       _pointer=$(( ($_pointer + 1) % $_length ))
-      printf '%s\n' "${_buffer[$_pointer]}"
+      println "${_buffer[$_pointer]}"
     done
   fi
 }
@@ -316,7 +324,7 @@ dropRight() {
       _pointer=$(( ($_pointer + 1) % $_drop ))
       if (( $_pointer < $_length ))
       then
-        printf '%s\n' ${_buffer[$_pointer]}
+        println "${_buffer[$_pointer]}"
       fi
       _buffer[$_pointer]="$REPLY"
       if (( $_length < $_drop )); then _length=$(( $_length + 1 )); fi
@@ -331,7 +339,7 @@ takeWhile() {
   do
     if $(eval "$_func \"$REPLY\"")
     then
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     else
       break
     fi
@@ -347,7 +355,7 @@ dropWhile() {
     if $_take || ! $(eval "$_func \"$REPLY\"")
     then
       _take=true
-      printf '%s\n' "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -365,7 +373,7 @@ reverse() {
   while (( _length > 0 ))
   do
     _length=$(( $_length - 1 ))
-    printf '%s\n' "${_buffer[$_length]}"
+    println "${_buffer[$_length]}"
   done
 }
 
@@ -378,7 +386,7 @@ foldLeft() {
     _acc=$(eval "$_func \"$_acc\" \"$REPLY\"")
   done
 
-  printf '%s\n' "$_acc"
+  println "$_acc"
 }
 
 intersperse() {
@@ -391,9 +399,9 @@ intersperse() {
     then
       _first=false
     else
-      printf '%s\n' "$_elem"
+      println "$_elem"
     fi
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
   done
 }
 
@@ -402,12 +410,12 @@ prepend() {
 
   eval "$_func" | while read -r
   do
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
   done
 
   while read -r
   do
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
   done
 }
 
@@ -416,19 +424,19 @@ append() {
 
   while read -r
   do
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
   done
 
   eval "$_func" | while read -r
   do
-    printf '%s\n' "$REPLY"
+    println "$REPLY"
   done
 }
 
 mkString() {
   local _sep="$1"
 
-  intersperse "$_sep" | (λ(){ printf '%s\n' "$1$2"; }; foldLeft "" λ)
+  intersperse "$_sep" | (λ(){ println "$1$2"; }; foldLeft "" λ)
 }
 
 toString() {
