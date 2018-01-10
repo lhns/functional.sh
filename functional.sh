@@ -1,3 +1,5 @@
+newline=$'\n'
+
 Chars() {
   local _string="$1"
   shift
@@ -106,6 +108,16 @@ filterNot() {
   filter "! $_func"
 }
 
+nonEmpty() {
+  while read -r
+  do
+    if ! [ -z "$REPLY" ]
+    then
+      echo "$REPLY"
+    fi
+  done
+}
+
 length() {
   local _length=0
 
@@ -165,6 +177,16 @@ grouped() {
       Array _buffer 0 _length | mkString " "
       _length=0
     fi
+  done
+}
+
+split() {
+  local _sep="$1"
+  shift
+
+  while read -r
+  do
+    echo "${REPLY//$_sep/$newline}"
   done
 }
 
