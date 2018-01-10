@@ -1,5 +1,3 @@
-newline=$'\n'
-
 Chars() {
   local _string="$1"
   shift
@@ -42,6 +40,8 @@ Array() {
     echo "${!_elem}"
   done
 }
+
+newline=$'\n'
 
 isEmpty() {
   local _empty=true
@@ -159,6 +159,18 @@ zipWithIndex() {
   do
     echo "$REPLY $_i"
     _i=$(( $_i + 1 ))
+  done
+}
+
+zipWith() {
+  local _func="$1"
+  shift
+
+  while read -r
+  do
+    _elem=$REPLY
+    eval "$_func \"$_elem\" $@" |
+      (λ(){ echo "$_elem $1"; }; map λ)
   done
 }
 
