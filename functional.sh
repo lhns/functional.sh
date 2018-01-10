@@ -6,7 +6,10 @@ Chars() {
 }
 
 List() {
-  for _elem in "$@"
+  local _elems="$@"
+  shift
+
+  for _elem in "$elems"
   do
     echo "$_elem"
   done
@@ -14,6 +17,8 @@ List() {
 
 Option() {
   local _elem="$@"
+  shift
+
   if ! [ -z "$_elem" ]
   then
     echo "$_elem"
@@ -22,6 +27,8 @@ Option() {
 
 Variable() {
   local _variable="$1"
+  shift
+
   if ! [ -z ${!_variable+x} ]
   then
     echo "${!_variable}"
@@ -32,7 +39,7 @@ Array() {
   local _arr="$1"
   local _off=$(Option "$2" | getOrElse 0)
   local _len=$(Option "$3" | (λ(){ eval echo $\{#$_arr[@]\}; }; orElse λ))
-  shift
+  shift 3
 
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
@@ -42,6 +49,19 @@ Array() {
 }
 
 newline=$'\n'
+
+startscope() {
+  if [ -z "$scope" ]
+  then
+    scope=1
+  else
+    scope=$(( $scope + 1 ))
+  fi
+}
+
+endscope() {
+  scope=$(( $scope - 1 ))
+}
 
 isEmpty() {
   local _empty=true
@@ -84,7 +104,7 @@ map() {
 
   while read -r
   do
-    eval "$_func \"$REPLY\" $@"
+    (eval "$_func \"$REPLY\" $@")
   done
 }
 
@@ -168,7 +188,7 @@ zipWith() {
 
   while read -r
   do
-    _elem=$REPLY
+    local _elem=$REPLY
     eval "$_func \"$_elem\" $@" |
       (λ(){ echo "$_elem $1"; }; map λ)
   done
@@ -390,9 +410,9 @@ foldLeft() {
 
 intersperse() {
   local _elem="$1"
-  local _first=true
   shift
 
+  local _first=true
   while read -r
   do
     if $_first
