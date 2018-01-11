@@ -1,27 +1,35 @@
-newline=$'\n'
-
-print() {
+string.print() {
   printf '%s' "$1"
 }
 
-println() {
+string.println() {
   printf '%s\n' "$1"
 }
 
-trim() {
+string.trim() {
   sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
+string.split() {
+  local _sep="$1"
+
+  local _newline=$'\n'
+  while read -r
+  do
+    string.println "${REPLY//$_sep/$_newline}"
+  done
 }
 
 Chars() {
   local _string="$1"
 
-  print "$_string" | sed -e 's/\(.\)/\1\n/g'
+  string.print "$_string" | sed -e 's/\(.\)/\1\n/g'
 }
 
 List() {
   for _elem in "$@"
   do
-    println "$_elem"
+    string.println "$_elem"
   done
 }
 
@@ -30,7 +38,7 @@ Option() {
 
   if ! [ -z "$_elem" ]
   then
-    println "$_elem"
+    string.println "$_elem"
   fi
 }
 
@@ -45,53 +53,53 @@ Variable() {
 
   if ! [ -z ${!_variable+x} ]
   then
-    println "${!_variable}"
+    string.println "${!_variable}"
   fi
 }
 
 Array() {
   local _arr="$1"
-  local _off=$(Option "$2" | getOrElse 0)
-  local _len=$(Option "$3" | (λ(){ eval println $\{#$_arr[@]\}; }; orElse λ))
+  local _off=$(Option "$2" | stream.getOrElse 0)
+  local _len=$(Option "$3" | (λ(){ eval string.println $\{#$_arr[@]\}; }; stream.orElse λ))
 
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
     local _elem=$_arr[$_i]
-    println "${!_elem}"
+    string.println "${!_elem}"
   done
 }
 
-isEmpty() {
+stream.isEmpty() {
   local _empty=true
 
   while read -r
   do
-    println "$REPLY"
+    string.println "$REPLY"
     _empty=false
   done
 
   $_empty
 }
 
-getOrElse() {
+stream.getOrElse() {
   local _elem="$1"
 
-  if isEmpty
+  if stream.isEmpty
   then
-    println "$_elem"
+    string.println "$_elem"
   fi
 }
 
-orElse() {
+stream.orElse() {
   local _func="$1"
 
-  if isEmpty
+  if stream.isEmpty
   then
     (eval "$_func")
   fi
 }
 
-map() {
+stream.map() {
   local _func="$1"
 
   while read -r
@@ -100,35 +108,35 @@ map() {
   done
 }
 
-filter() {
+stream.filter() {
   local _func="$1"
 
   while read -r
   do
     if $(eval "$_func \"$REPLY\"")
     then
-      println "$REPLY"
+      string.println "$REPLY"
     fi
   done
 }
 
-filterNot() {
+stream.filterNot() {
   local _func="$1"
 
-  filter "! $_func"
+  stream.filter "! $_func"
 }
 
-nonEmpty() {
+stream.nonEmpty() {
   while read -r
   do
     if ! [ -z "$REPLY" ]
     then
-      println "$REPLY"
+      string.println "$REPLY"
     fi
   done
 }
 
-length() {
+stream.length() {
   local _length=0
 
   while read -r
@@ -136,53 +144,74 @@ length() {
     _length=$(( $_length + 1 ))
   done
 
-  println $_length
+  string.println $_length
 }
 
-get() {
+stream.get() {
   local _index="$1"
 
   local _i=0
   while read -r
   do
-    if (( $_i == $_index )); then println "$REPLY"; fi
+    if (( $_i == $_index ))
+    then
+      string.println "$REPLY"
+      break
+    fi
     _i=$(( $_i + 1 ))
   done
 }
 
-indexOf() {
+stream.indexOf() {
   local _elem="$1"
 
   local _i=0
   while read -r
   do
-    if [ "$REPLY" == "$_elem" ]; then println $_i; fi
+    if [ "$REPLY" == "$_elem" ]
+    then
+      string.println $_i
+      break
+    fi
     _i=$(( $_i + 1 ))
   done
 }
 
-zipWithIndex() {
+stream.find() {
+  local _func="$1"
+
+  while read -r
+  do
+    if $(eval "$_func \"$REPLY\"")
+    then
+      string.println "$REPLY"
+      break
+    fi
+  done
+}
+
+stream.zipWithIndex() {
   local _i=0
   while read -r
   do
-    println "$REPLY $_i"
+    string.println "$REPLY $_i"
     _i=$(( $_i + 1 ))
   done
 }
 
-zipWith() {
+stream.zipWith() {
   local _func="$1"
 
   while read -r
   do
     local _elem=$REPLY
     eval "$_func \"$_elem\"" |
-      (λ(){ println "$_elem $1"; }; map λ)
+      (λ(){ string.println "$_elem $1"; }; stream.map λ)
   done
 }
 
-grouped() {
-  local _size=$(Option "$1" | getOrElse 2)
+stream.grouped() {
+  local _size=$(Option "$1" | stream.getOrElse 2)
 
   local _buffer[0]=""
   local _length=0
@@ -192,44 +221,24 @@ grouped() {
     _length=$(( $_length + 1 ))
     if (( $_length >= $_size ))
     then
-      Array _buffer 0 _length | mkString " "
+      Array _buffer 0 _length | stream.mkString " "
       _length=0
     fi
   done
+
+  if (( $_length > 0 ))
+  then
+    Array _buffer 0 _length | stream.mkString " "
+  fi
 }
 
-split() {
-  local _sep="$1"
-
-  while read -r
-  do
-    println "${REPLY//$_sep/$newline}"
-  done
-}
-
-sorted() {
+stream.sorted() {
   sort "$@"
 }
 
-first() {
-  take 1
-}
-
-head() {
-  take 1
-}
-
-last() {
-  takeRight 1
-}
-
-tail() {
-  drop 1
-}
-
-sortBy() {
-  local _func2=$(List "$@" | last)
-  local _options=$(List "$@" | dropRight 1 | toList)
+stream.sortBy() {
+  local _func2=$(List "$@" | stream.last)
+  local _options=$(List "$@" | stream.dropRight 1 | stream.toList)
 
   local _buffer[0]=""
   local _length=0
@@ -240,28 +249,44 @@ sortBy() {
   done
 
   Array _buffer 0 $_length |
-    zipWithIndex |
+    stream.zipWithIndex |
     (_lambda(){
-      local _i=$(List $1 | last)
-      local _e=$(Chars "$1" | dropRight $(( $(Chars "$_i" | length) + 1 )) | mkString)
+      local _i=$(List $1 | stream.last)
+      local _e=$(Chars "$1" | stream.dropRight $(( $(Chars "$_i" | stream.length) + 1 )) | stream.mkString)
       local _by=$(eval "$_func2 \"$_e\"")
-      println "$_by $_i"
-    }; map _lambda) |
-    sorted -k1,1 $_options |
+      string.println "$_by $_i"
+    }; stream.map _lambda) |
+    stream.sorted -k1,1 $_options |
     (λ(){
-      local _i=$(List $1 | last)
-      println "${_buffer[$_i]}"
-    }; map λ)
+      local _i=$(List $1 | stream.last)
+      string.println "${_buffer[$_i]}"
+    }; stream.map λ)
 }
 
-take() {
-  local _take=$(Option "$1" | getOrElse 1)
+stream.first() {
+  stream.take 1
+}
+
+stream.head() {
+  stream.take 1
+}
+
+stream.last() {
+  stream.takeRight 1
+}
+
+stream.tail() {
+  stream.drop 1
+}
+
+stream.take() {
+  local _take=$(Option "$1" | stream.getOrElse 1)
 
   while read -r
   do
     if (( $_take > 0 ))
     then
-      println "$REPLY"
+      string.println "$REPLY"
     else
       break
     fi
@@ -269,8 +294,8 @@ take() {
   done
 }
 
-drop() {
-  local _drop=$(Option "$1" | getOrElse 1)
+stream.drop() {
+  local _drop=$(Option "$1" | stream.getOrElse 1)
 
   while read -r
   do
@@ -278,13 +303,13 @@ drop() {
     then
       _drop=$(( $_drop - 1 ))
     else
-      println "$REPLY"
+      string.println "$REPLY"
     fi
   done
 }
 
-takeRight() {
-  local _take=$(Option "$1" | getOrElse 1)
+stream.takeRight() {
+  local _take=$(Option "$1" | stream.getOrElse 1)
 
   if (( $_take > 0 ))
   then
@@ -301,13 +326,13 @@ takeRight() {
     for i in $(seq 1 $_length)
     do
       _pointer=$(( ($_pointer + 1) % $_length ))
-      println "${_buffer[$_pointer]}"
+      string.println "${_buffer[$_pointer]}"
     done
   fi
 }
 
-dropRight() {
-  local _drop=$(Option "$1" | getOrElse 1)
+stream.dropRight() {
+  local _drop=$(Option "$1" | stream.getOrElse 1)
 
   if (( $_drop <= 0 ))
   then
@@ -321,7 +346,7 @@ dropRight() {
       _pointer=$(( ($_pointer + 1) % $_drop ))
       if (( $_pointer < $_length ))
       then
-        println "${_buffer[$_pointer]}"
+        string.println "${_buffer[$_pointer]}"
       fi
       _buffer[$_pointer]="$REPLY"
       if (( $_length < $_drop )); then _length=$(( $_length + 1 )); fi
@@ -329,21 +354,21 @@ dropRight() {
   fi
 }
 
-takeWhile() {
+stream.takeWhile() {
   local _func="$1"
 
   while read -r
   do
     if $(eval "$_func \"$REPLY\"")
     then
-      println "$REPLY"
+      string.println "$REPLY"
     else
       break
     fi
   done
 }
 
-dropWhile() {
+stream.dropWhile() {
   local _func="$1"
 
   local _take=false
@@ -352,12 +377,12 @@ dropWhile() {
     if $_take || ! $(eval "$_func \"$REPLY\"")
     then
       _take=true
-      println "$REPLY"
+      string.println "$REPLY"
     fi
   done
 }
 
-reverse() {
+stream.reverse() {
   local _buffer[0]=""
   local _length=0
   while read -r
@@ -369,11 +394,11 @@ reverse() {
   while (( _length > 0 ))
   do
     _length=$(( $_length - 1 ))
-    println "${_buffer[$_length]}"
+    string.println "${_buffer[$_length]}"
   done
 }
 
-repeat() {
+stream.repeat() {
   local times="$1"
 
   local _buffer[0]=""
@@ -389,13 +414,13 @@ repeat() {
     local _index=0
     while (( _index < _length ))
     do
-      println "${_buffer[$_index]}"
+      string.println "${_buffer[$_index]}"
       _index=$(( $_index + 1 ))
     done
   done
 }
 
-foldLeft() {
+stream.foldLeft() {
   local _acc="$1"
   local _func="$2"
 
@@ -404,10 +429,10 @@ foldLeft() {
     _acc=$(eval "$_func \"$_acc\" \"$REPLY\"")
   done
 
-  println "$_acc"
+  string.println "$_acc"
 }
 
-intersperse() {
+stream.intersperse() {
   local _elem="$1"
 
   local _first=true
@@ -417,54 +442,69 @@ intersperse() {
     then
       _first=false
     else
-      println "$_elem"
+      string.println "$_elem"
     fi
-    println "$REPLY"
+    string.println "$REPLY"
   done
 }
 
-prepend() {
+stream.prepend() {
   local _func="$1"
 
   eval "$_func" | while read -r
   do
-    println "$REPLY"
+    string.println "$REPLY"
   done
 
   while read -r
   do
-    println "$REPLY"
+    string.println "$REPLY"
   done
 }
 
-append() {
+stream.append() {
   local _func="$1"
 
   while read -r
   do
-    println "$REPLY"
+    string.println "$REPLY"
   done
 
   eval "$_func" | while read -r
   do
-    println "$REPLY"
+    string.println "$REPLY"
   done
 }
 
-mkString() {
+stream.mkString() {
   local _sep="$1"
   local _start="$2"
   local _end="$3"
 
-  intersperse "$_sep" |
-    (λ(){ println "$_end"; }; append λ) |
-    (λ(){ println "$1$2"; }; foldLeft "$_start" λ)
+  local _string="$_start"
+  local _first=true
+  while read -r
+  do
+    if $_first
+    then
+      _first=false
+      _string="$_string$REPLY"
+    else
+      _string="$_string$_sep$REPLY"
+    fi
+  done
+
+  string.println "$_string$_end"
 }
 
-toString() {
-  mkString "" "" ""
+stream.toString() {
+  stream.mkString "" "" ""
 }
 
-toList() {
-  mkString " " "" ""
+stream.toList() {
+  stream.mkString " " "" ""
+}
+
+stream.lines() {
+  stream.mkString $'\n' "" ""
 }
