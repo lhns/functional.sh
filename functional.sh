@@ -99,6 +99,13 @@ stream.orElse() {
   fi
 }
 
+stream.ignore() {
+  while read -r
+  do
+    :
+  done
+}
+
 stream.map() {
   local _func="$1"
 
