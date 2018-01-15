@@ -9,8 +9,12 @@ assert() {
 }
 
 assert "println" "$(string.println "test")" "test"
-assert "trim" "$(string.println "  test " | string.trim)" "test"
-assert "split" "$(string.println "a+b+c+d" | string.split "+" | stream.mkString , [ ])" "[a,b,c,d]"
+assert "trim" "$(string.trim "  test ")" "test"
+assert "split" "$(string.split "a+b+c+d" "+" | stream.mkString , [ ])" "[a,b,c,d]"
+assert "replace" "$(string.replace "aaa" "a" "b")" "baa"
+assert "replaceAll" "$(string.replaceAll "aaa" "a" "b")" "bbb"
+assert "regexReplace" "$(string.regexReplace "asdfasdf" "s.f" "b")" "abasdf"
+assert "regexReplaceAll" "$(string.regexReplaceAll "asdfasdf" "s.f" "b")" "abab"
 assert "Chars" "$(Chars "test " | stream.mkString , [ ])" "[t,e,s,t, ]"
 assert "List" "$(List "t" e s "t " | stream.mkString , [ ])" "[t,e,s,t ]"
 assert "Option" "$(Option asdf | stream.getOrElse test)" "asdf"

@@ -6,30 +6,74 @@ string.println() {
   printf '%s\n' "$1"
 }
 
+string.escapeNewline() {
+  local _string="$1"
+  local _escaped="${_string//\\/\\\\}"
+
+  string.println "${_escaped//$'\n'/\\n}"
+}
+
+string.unescapeNewline() {
+  local _string="$1"
+
+  string.println "$_string" | perl -C -pe 's/(?<!\\)(\\\\)*\\n/\1\n/g; s/\\\\/\\/g'
+}
+
 string.trim() {
-  sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+  local _string="$1"
+
+  string.regexReplaceAll "$_string" '^ *| *$' ''
 }
 
 string.split() {
-  local _sep="$1"
+  local _string="$1"
+  local _sep="$2"
 
-  local _newline=$'\n'
-  while read -r
-  do
-    string.println "${REPLY//$_sep/$_newline}"
-  done
+  string.replaceAll "$_string" "$_sep" $'\n'
+}
+
+string.replace() {
+  local _string="$1"
+  local _pattern="$2"
+  local _substitution="$3"
+
+  string.println "${_string/"$_pattern"/$_substitution}"
+}
+
+string.replaceAll() {
+  local _string="$1"
+  local _pattern="$2"
+  local _substitution="$3"
+
+  string.println "${_string//"$_pattern"/$_substitution}"
+}
+
+string.regexReplace() {
+  local _string="$1"
+  local _regex="$2"
+  local _substitution="$3"
+
+  string.print "$_string" | perl -C -ple "s/$_regex/$_substitution/"
+}
+
+string.regexReplaceAll() {
+  local _string="$1"
+  local _regex="$2"
+  local _substitution="$3"
+
+  string.print "$_string" | perl -C -ple "s/$_regex/$_substitution/g"
 }
 
 Chars() {
   local _string="$1"
 
-  string.print "$_string" | sed -e 's/\(.\)/\1\n/g'
+  string.escapeNewline "$_string" | stream.map string.regexReplaceAll '(\\\\|\\n|.)' '\1\n' | stream.dropLast
 }
 
 List() {
   for _elem in "$@"
   do
-    string.println "$_elem"
+    string.escapeNewline "$_elem"
   done
 }
 
@@ -38,7 +82,7 @@ Option() {
 
   if ! [ -z "$_elem" ]
   then
-    string.println "$_elem"
+    string.escapeNewline "$_elem"
   fi
 }
 
@@ -53,7 +97,7 @@ Variable() {
 
   if ! [ -z ${!_variable+x} ]
   then
-    string.println "${!_variable}"
+    string.escapeNewline "${!_variable}"
   fi
 }
 
@@ -65,7 +109,7 @@ Array() {
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
     local _elem=$_arr[$_i]
-    string.println "${!_elem}"
+    string.escapeNewline "${!_elem}"
   done
 }
 
@@ -92,10 +136,13 @@ stream.getOrElse() {
 
 stream.orElse() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   if stream.isEmpty
   then
-    (eval "$_func")
+    (eval "$_func$_args")
   fi
 }
 
@@ -108,19 +155,25 @@ stream.ignore() {
 
 stream.map() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
-    (eval "$_func \"$REPLY\"")
+    (eval "$_func \"$REPLY\"$_args")
   done
 }
 
 stream.filter() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"")
+    if $(eval "$_func \"$REPLY\"$_args")
     then
       string.println "$REPLY"
     fi
@@ -129,8 +182,11 @@ stream.filter() {
 
 stream.filterNot() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
-  stream.filter "! $_func"
+  stream.filter "! $_func$_args"
 }
 
 stream.nonEmpty() {
@@ -186,10 +242,13 @@ stream.indexOf() {
 
 stream.find() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"")
+    if $(eval "$_func \"$REPLY\"$_args")
     then
       string.println "$REPLY"
       break
@@ -208,11 +267,14 @@ stream.zipWithIndex() {
 
 stream.zipWith() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
     local _elem=$REPLY
-    eval "$_func \"$_elem\"" |
+    eval "$_func \"$_elem\"$_args" |
       (λ(){ string.println "$_elem $1"; }; stream.map λ)
   done
 }
@@ -280,6 +342,21 @@ stream.head() {
 
 stream.last() {
   stream.takeRight 1
+}
+
+stream.dropLast() {
+  local _first=true
+  local _last=""
+  while read -r
+  do
+    if $_first
+    then
+      _first=false
+    else
+      string.println "$_last"
+    fi
+    _last="$REPLY"
+  done
 }
 
 stream.tail() {
@@ -363,10 +440,13 @@ stream.dropRight() {
 
 stream.takeWhile() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"")
+    if $(eval "$_func \"$REPLY\"$_args")
     then
       string.println "$REPLY"
     else
@@ -377,11 +457,14 @@ stream.takeWhile() {
 
 stream.dropWhile() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   local _take=false
   while read -r
   do
-    if $_take || ! $(eval "$_func \"$REPLY\"")
+    if $_take || ! $(eval "$_func \"$REPLY\"$_args")
     then
       _take=true
       string.println "$REPLY"
@@ -430,10 +513,13 @@ stream.repeat() {
 stream.foldLeft() {
   local _acc="$1"
   local _func="$2"
+  shift 2
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
-    _acc=$(eval "$_func \"$_acc\" \"$REPLY\"")
+    _acc=$(eval "$_func \"$_acc\" \"$REPLY\"$_args")
   done
 
   string.println "$_acc"
@@ -457,8 +543,11 @@ stream.intersperse() {
 
 stream.prepend() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
-  eval "$_func" | while read -r
+  eval "$_func$_args" | while read -r
   do
     string.println "$REPLY"
   done
@@ -471,13 +560,16 @@ stream.prepend() {
 
 stream.append() {
   local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"; do _args="$_args \"$_elem\""; done
 
   while read -r
   do
     string.println "$REPLY"
   done
 
-  eval "$_func" | while read -r
+  eval "$_func$_args" | while read -r
   do
     string.println "$REPLY"
   done
@@ -501,7 +593,7 @@ stream.mkString() {
     fi
   done
 
-  string.println "$_string$_end"
+  string.unescapeNewline "$_string$_end"
 }
 
 stream.toString() {
