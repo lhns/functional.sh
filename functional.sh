@@ -16,7 +16,13 @@ string.escapeNewline() {
 string.unescapeNewline() {
   local _string="$1"
 
-  string.println "$_string" | perl -C -pe 's/(?<!\\)(\\\\)*\\n/\1\n/g; s/\\\\/\\/g'
+  string.print "$_string" | perl -C -ple 's/(?<!\\)(\\\\)*\\n/\1\n/g; s/\\\\/\\/g'
+}
+
+string.escapeQuoted() {
+  local _string="$1"
+
+  string.regexReplaceAll "$_string" '(\\|"|\$|`)' '\\\1'
 }
 
 string.trim() {
@@ -89,7 +95,7 @@ Option() {
 File() {
   local _path="$1"
 
-  cat "$_path"
+  cat "$_path" | stream.map string.escapeNewline
 }
 
 Variable() {
@@ -138,7 +144,11 @@ stream.orElse() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   if stream.isEmpty
   then
@@ -157,11 +167,16 @@ stream.map() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    (eval "$_func \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    (eval "$_func \"$_escaped\"$_args")
   done
 }
 
@@ -169,11 +184,16 @@ stream.filter() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    if $(eval "$_func \"$_escaped\"$_args")
     then
       string.println "$REPLY"
     fi
@@ -184,9 +204,13 @@ stream.filterNot() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
-  stream.filter "! $_func$_args"
+  stream.filter "! $_func" $_args
 }
 
 stream.nonEmpty() {
@@ -244,11 +268,16 @@ stream.find() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    if $(eval "$_func \"$_escaped\"$_args")
     then
       string.println "$REPLY"
       break
@@ -269,12 +298,17 @@ stream.zipWith() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    local _elem=$REPLY
-    eval "$_func \"$_elem\"$_args" |
+    _elem="$REPLY"
+    _escaped=$(string.escapeQuoted "$REPLY")
+    eval "$_func \"$_escaped\"$_args" |
       (λ(){ string.println "$_elem $1"; }; stream.map λ)
   done
 }
@@ -322,6 +356,7 @@ stream.sortBy() {
     (_lambda(){
       local _i=$(List $1 | stream.last)
       local _e=$(Chars "$1" | stream.dropRight $(( $(Chars "$_i" | stream.length) + 1 )) | stream.mkString)
+      _e=$(string.escapeQuoted "$_e")
       local _by=$(eval "$_func2 \"$_e\"")
       string.println "$_by $_i"
     }; stream.map _lambda) |
@@ -442,11 +477,16 @@ stream.takeWhile() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    if $(eval "$_func \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    if $(eval "$_func \"$_escaped\"$_args")
     then
       string.println "$REPLY"
     else
@@ -459,12 +499,17 @@ stream.dropWhile() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   local _take=false
   while read -r
   do
-    if $_take || ! $(eval "$_func \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    if $_take || ! $(eval "$_func \"$_escaped\"$_args")
     then
       _take=true
       string.println "$REPLY"
@@ -515,11 +560,16 @@ stream.foldLeft() {
   local _func="$2"
   shift 2
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
-    _acc=$(eval "$_func \"$_acc\" \"$REPLY\"$_args")
+    _escaped=$(string.escapeQuoted "$REPLY")
+    _acc=$(eval "$_func \"$_acc\" \"$_escaped\"$_args")
   done
 
   string.println "$_acc"
@@ -545,7 +595,11 @@ stream.prepend() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   eval "$_func$_args" | while read -r
   do
@@ -562,7 +616,11 @@ stream.append() {
   local _func="$1"
   shift
   local _args=""
-  for _elem in "$@"; do _args="$_args \"$_elem\""; done
+  for _elem in "$@"
+  do
+    _escaped=$(string.escapeQuoted "$_elem")
+    _args="$_args \"$_escaped\""
+  done
 
   while read -r
   do
@@ -572,6 +630,13 @@ stream.append() {
   eval "$_func$_args" | while read -r
   do
     string.println "$REPLY"
+  done
+}
+
+stream.lines() {
+  while read -r
+  do
+    string.unescapeNewline "$REPLY"
   done
 }
 
@@ -604,6 +669,6 @@ stream.toList() {
   stream.mkString " " "" ""
 }
 
-stream.lines() {
+stream.toLines() {
   stream.mkString $'\n' "" ""
 }
