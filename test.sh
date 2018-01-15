@@ -1,4 +1,6 @@
-﻿source ./functional.sh
+﻿#!/bin/bash
+
+source ./functional.sh
 
 assert() {
   if [ ! "$2" == "$3" ]
