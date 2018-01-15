@@ -1,3 +1,5 @@
+#!/bin/bash
+
 string.print() {
   printf '%s' "$1"
 }
