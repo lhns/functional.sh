@@ -260,10 +260,12 @@ stream.indexOf() {
     if [ "$REPLY" == "$_elem" ]
     then
       string.println $_i
-      break
+      return
     fi
     _i=$(( $_i + 1 ))
   done
+
+  string.println -1
 }
 
 stream.find() {
@@ -366,6 +368,24 @@ stream.sortBy() {
       local _i=$(List $1 | stream.last)
       string.println "${_buffer[$_i]}"
     }; stream.map λ)
+}
+
+stream.startsWith() {
+  local _elem="$1"
+
+  [ "$(stream.first)" == "$_elem" ]
+}
+
+stream.endsWith() {
+  local _elem="$1"
+
+  [ "$(stream.last)" == "$_elem" ]
+}
+
+stream.contains() {
+  local _elem="$1"
+
+  [ "$(stream.indexOf "$_elem")" != "-1" ]
 }
 
 stream.first() {
