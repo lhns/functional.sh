@@ -24,7 +24,7 @@ string.unescapeNewline() {
 string.quote() {
   local _string="$1"
 
-  string.regexReplaceAll "$_string" '(\\|"|\$|`)' '\\\1'
+  string.println "'$(string.regexReplaceAll "$_string" "'" "'\"'\"'")'"
 }
 
 string.trim() {
@@ -148,8 +148,7 @@ stream.orElse() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   if stream.isEmpty
@@ -171,14 +170,12 @@ stream.map() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    (eval "$_func \"$_quoted\"$_args")
+    (eval "$_func $(string.quote "$REPLY")$_args")
   done
 }
 
@@ -188,14 +185,12 @@ stream.filter() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    if $(eval "$_func \"$_quoted\"$_args")
+    if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
       string.println "$REPLY"
     fi
@@ -208,8 +203,7 @@ stream.filterNot() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   stream.filter "! $_func" $_args
@@ -274,14 +268,12 @@ stream.find() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    if $(eval "$_func \"$_quoted\"$_args")
+    if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
       string.println "$REPLY"
       break
@@ -304,15 +296,13 @@ stream.zipWith() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
     _elem="$REPLY"
-    _quoted=$(string.quote "$REPLY")
-    eval "$_func \"$_quoted\"$_args" |
+    eval "$_func $(string.quote "$REPLY")$_args" |
       (λ(){ string.println "$_elem $1"; }; stream.map λ)
   done
 }
@@ -360,7 +350,7 @@ stream.sortBy() {
     (_lambda(){
       local _i=$(List $1 | stream.last)
       local _e=$(Chars "$1" | stream.dropRight $(( $(Chars "$_i" | stream.length) + 1 )) | stream.mkString | stream.map string.quote)
-      local _by=$(eval "$_func2 \"$_e\"")
+      local _by=$(eval "$_func2 $_e")
       string.println "$_by $_i"
     }; stream.map _lambda) |
     stream.sorted -k1,1 $_options |
@@ -500,14 +490,12 @@ stream.takeWhile() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    if $(eval "$_func \"$_quoted\"$_args")
+    if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
       string.println "$REPLY"
     else
@@ -522,15 +510,13 @@ stream.dropWhile() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   local _take=false
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    if $_take || ! $(eval "$_func \"$_quoted\"$_args")
+    if $_take || ! $(eval "$_func $(string.quote "$REPLY")$_args")
     then
       _take=true
       string.println "$REPLY"
@@ -583,14 +569,12 @@ stream.foldLeft() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
   do
-    _quoted=$(string.quote "$REPLY")
-    _acc=$(eval "$_func \"$_acc\" \"$_quoted\"$_args")
+    _acc=$(eval "$_func $(string.quote "$_acc") $(string.quote "$REPLY")$_args")
   done
 
   string.println "$_acc"
@@ -618,8 +602,7 @@ stream.prepend() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   eval "$_func$_args" | while read -r
@@ -639,8 +622,7 @@ stream.append() {
   local _args=""
   for _elem in "$@"
   do
-    _quoted=$(string.quote "$_elem")
-    _args="$_args \"$_quoted\""
+    _args="$_args $(string.quote "$_elem")"
   done
 
   while read -r
