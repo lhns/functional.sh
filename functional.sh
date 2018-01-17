@@ -75,13 +75,13 @@ string.regexReplaceAll() {
 Chars() {
   local _string="$1"
 
-  string.escapeNewline "$_string" | stream.map string.regexReplaceAll '(\\\\|\\n|.)' '\1\n' | stream.dropLast
+  string.regexReplaceAll "$_string" '(.)' '\1\n' | stream.dropLast
 }
 
 List() {
   for _elem in "$@"
   do
-    string.escapeNewline "$_elem"
+    string.println "$_elem"
   done
 }
 
@@ -90,14 +90,14 @@ Option() {
 
   if ! [ -z "$_elem" ]
   then
-    string.escapeNewline "$_elem"
+    string.println "$_elem"
   fi
 }
 
 File() {
   local _path="$1"
 
-  cat "$_path" | stream.map string.escapeNewline
+  cat "$_path"
 }
 
 Variable() {
@@ -105,11 +105,18 @@ Variable() {
 
   if ! [ -z ${!_variable+x} ]
   then
-    string.escapeNewline "${!_variable}"
+    string.println "${!_variable}"
   fi
 }
 
 Array() {
+  local _newline=false
+  if [ "$1" == "-n" ]
+  then
+    _newline=true
+    shift
+  fi
+
   local _arr="$1"
   local _off=$(Option "$2" | stream.getOrElse 0)
   local _len=$(Option "$3" | (λ(){ eval string.println $\{#$_arr[@]\}; }; stream.orElse λ))
@@ -117,7 +124,12 @@ Array() {
   for _i in $(seq $_off $(( $_off + $_len - 1 )))
   do
     local _elem=$_arr[$_i]
-    string.escapeNewline "${!_elem}"
+    if $_newline
+    then
+      string.escapeNewline "${!_elem}"
+    else
+      string.println "${!_elem}"
+    fi
   done
 }
 
@@ -639,7 +651,7 @@ stream.append() {
 stream.lines() {
   while read -r
   do
-    string.unescapeNewline "$REPLY"
+    string.println "$REPLY"
   done
 }
 
@@ -661,7 +673,7 @@ stream.mkString() {
     fi
   done
 
-  string.unescapeNewline "$_string$_end"
+  string.println "$_string$_end"
 }
 
 stream.toString() {
