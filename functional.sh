@@ -76,6 +76,25 @@ string.regexReplaceAll() {
 
 # object stream
 
+Range() {
+  local _incl=false
+  if [ "$1" == "-i" ]
+  then
+    _incl=true
+    shift
+  fi
+
+  local _start="$1"
+  local _end="$2"
+
+  if ! $_incl
+  then
+    _end="$(($_end - 1))"
+  fi
+
+  seq "$_start" "$_end"
+}
+
 Chars() {
   local _string="$1"
 
@@ -125,7 +144,7 @@ Array() {
   local _off=$(Option "$2" | stream.getOrElse 0)
   local _len=$(Option "$3" | (λ(){ eval string.println $\{#$_arr[@]\}; }; stream.orElse λ))
 
-  for _i in $(seq $_off $(( $_off + $_len - 1 )))
+  for _i in $(Range $_off $(( $_off + $_len )))
   do
     local _elem=$_arr[$_i]
     if $_newline
@@ -173,6 +192,24 @@ stream.orElse() {
   then
     (eval "$_func$_args")
   fi
+}
+
+stream.if() {
+  local _bool="$@"
+
+  if $(eval "$_bool")
+  then
+    stream.identity
+  else
+    stream.ignore
+  fi
+}
+
+stream.identity() {
+  while read -r
+  do
+    string.println "$REPLY"
+  done
 }
 
 stream.ignore() {
