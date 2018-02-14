@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# class string
+
 string.print() {
   printf '%s' "$1"
 }
@@ -72,10 +74,12 @@ string.regexReplaceAll() {
   string.print "$_string" | perl -C -ple "s/$_regex/$_substitution/g"
 }
 
+# object stream
+
 Chars() {
   local _string="$1"
 
-  string.regexReplaceAll "$_string" '(.)' '\1\n' | stream.dropLast
+  string.regexReplaceAll "$_string" '(.)' '\1\n' | stream.init
 }
 
 List() {
@@ -133,6 +137,8 @@ Array() {
   done
 }
 
+# class stream
+
 stream.isEmpty() {
   local _empty=true
 
@@ -188,6 +194,22 @@ stream.map() {
   while read -r
   do
     (eval "$_func $(string.quote "$REPLY")$_args")
+  done
+}
+
+stream.foreach() {
+  local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"
+  do
+    _args="$_args $(string.quote "$_elem")"
+  done
+
+  while read -r
+  do
+    eval "$_func $(string.quote "$REPLY")$_args" |
+      stream.ignore
   done
 }
 
@@ -402,7 +424,7 @@ stream.last() {
   stream.takeRight 1
 }
 
-stream.dropLast() {
+stream.init() {
   local _first=true
   local _last=""
   while read -r
@@ -609,6 +631,42 @@ stream.intersperse() {
 }
 
 stream.prepend() {
+  for _elem in "$@"
+  do
+    string.println "$_elem"
+  done
+
+  while read -r
+  do
+    string.println "$REPLY"
+  done
+}
+
+stream.append() {
+  while read -r
+  do
+    string.println "$REPLY"
+  done
+
+  for _elem in "$@"
+  do
+    string.println "$_elem"
+  done
+}
+
+stream.concat() {
+  local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"
+  do
+    _args="$_args $(string.quote "$_elem")"
+  done
+
+  stream.appendAll "$_func" $_args
+}
+
+stream.prependAll() {
   local _func="$1"
   shift
   local _args=""
@@ -628,7 +686,7 @@ stream.prepend() {
   done
 }
 
-stream.append() {
+stream.appendAll() {
   local _func="$1"
   shift
   local _args=""
