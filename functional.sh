@@ -142,7 +142,7 @@ Array() {
 
   local _arr="$1"
   local _off=$(Option "$2" | stream.getOrElse 0)
-  local _len=$(Option "$3" | (λ(){ eval string.println $\{#$_arr[@]\}; }; stream.orElse λ))
+  local _len=$(Option "$3" | (stream.orElse <(eval string.println $\{#$_arr[@]\})))
 
   for _i in $(Range $_off $(( $_off + $_len )))
   do
