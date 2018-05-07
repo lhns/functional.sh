@@ -359,15 +359,20 @@ stream.zipWithIndex() {
 }
 
 stream.zipWith() {
-  local _stream="$1"
-
-  while true
+  local _func="$1"
+  shift
+  local _args=""
+  for _elem in "$@"
   do
-    read -r _elem1 || break
-    read -r _elem2 <&3 || break
+    _args="$_args $(string.quote "$_elem")"
+  done
 
-    string.println "$_elem1 $_elem2"
-  done 3<"$_stream"
+  while read -r
+  do
+    _elem="$REPLY"
+    eval "$_func $(string.quote "$REPLY")$_args" |
+      (λ(){ string.println "$_elem $1"; }; stream.map λ)
+  done
 }
 
 stream.grouped() {
