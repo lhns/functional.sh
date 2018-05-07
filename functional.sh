@@ -181,12 +181,6 @@ stream.getOrElse() {
 
 stream.orElse() {
   local _stream="$1"
-  shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
 
   if stream.isEmpty
   then
