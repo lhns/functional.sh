@@ -180,7 +180,7 @@ stream.getOrElse() {
 }
 
 stream.orElse() {
-  local _func="$1"
+  local _stream="$1"
   shift
   local _args=""
   for _elem in "$@"
@@ -190,7 +190,10 @@ stream.orElse() {
 
   if stream.isEmpty
   then
-    (eval "$_func$_args")
+    while read -r
+    do
+      string.println "$REPLY"
+    done <"$_stream"
   fi
 }
 
@@ -362,20 +365,15 @@ stream.zipWithIndex() {
 }
 
 stream.zipWith() {
-  local _func="$1"
-  shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _stream="$1"
 
-  while read -r
+  while true
   do
-    _elem="$REPLY"
-    eval "$_func $(string.quote "$REPLY")$_args" |
-      (λ(){ string.println "$_elem $1"; }; stream.map λ)
-  done
+    read -r _elem1 || break
+    read -r _elem2 <&3 || break
+
+    string.println "$_elem1 $_elem2"
+  done 3<"$_stream"
 }
 
 stream.grouped() {
@@ -692,30 +690,16 @@ stream.append() {
 }
 
 stream.concat() {
-  local _func="$1"
-  shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
-
-  stream.appendAll "$_func" $_args
+  stream.appendAll "$@"
 }
 
 stream.prependAll() {
-  local _func="$1"
-  shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _stream="$1"
 
-  eval "$_func$_args" | while read -r
+  while read -r
   do
     string.println "$REPLY"
-  done
+  done <"$_stream"
 
   while read -r
   do
@@ -724,23 +708,17 @@ stream.prependAll() {
 }
 
 stream.appendAll() {
-  local _func="$1"
-  shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _stream="$1"
 
   while read -r
   do
     string.println "$REPLY"
   done
 
-  eval "$_func$_args" | while read -r
+  while read -r
   do
     string.println "$REPLY"
-  done
+  done <"$_stream"
 }
 
 stream.lines() {
