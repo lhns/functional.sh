@@ -231,6 +231,31 @@ stream.map() {
   done
 }
 
+stream.mapN() {
+  local _length="$1"
+  local _func="$2"
+  shift 2
+  local _args=""
+  for _elem in "$@"
+  do
+    _args="$_args $(string.quote "$_elem")"
+  done
+
+  local _i=0
+  local _args1=""
+  while read -r
+  do
+    _args1="$_args1 $(string.quote "$REPLY")"
+    _i=$(( $_i + 1 ))
+    if (( $_i >= $_length ))
+    then
+      _i=0
+      (eval "$_func$_args1$_args")
+      _args1=""
+    fi
+  done
+}
+
 stream.foreach() {
   local _func="$1"
   shift
