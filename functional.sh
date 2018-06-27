@@ -396,7 +396,7 @@ stream.zipWith() {
   do
     _elem="$REPLY"
     eval "$_func $(string.quote "$REPLY")$_args" |
-      (λ(){ string.println "$_elem $1"; }; stream.map λ)
+      (F(){ string.println "$_elem $1"; }; stream.map F)
   done
 }
 
@@ -447,10 +447,10 @@ stream.sortBy() {
       string.println "$_by $_i"
     }; stream.map _lambda) |
     stream.sorted -k1,1 $_options |
-    (λ(){
+    (F(){
       local _i=$(List $1 | stream.last)
       string.println "${_buffer[$_i]}"
-    }; stream.map λ)
+    }; stream.map F)
 }
 
 stream.startsWith() {
