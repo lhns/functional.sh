@@ -161,7 +161,7 @@ Array() {
 stream.isEmpty() {
   local _empty=true
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
     _empty=false
@@ -184,7 +184,7 @@ stream.orElse() {
 
   if stream.isEmpty
   then
-    while read -r
+    while IFS= read -r
     do
       string.println "$REPLY"
     done <"$_stream"
@@ -203,14 +203,14 @@ stream.if() {
 }
 
 stream.identity() {
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
 }
 
 stream.ignore() {
-  while read -r
+  while IFS= read -r
   do
     :
   done
@@ -225,7 +225,7 @@ stream.map() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     (eval "$_func $(string.quote "$REPLY")$_args")
   done
@@ -243,7 +243,7 @@ stream.mapN() {
 
   local _i=0
   local _args1=""
-  while read -r
+  while IFS= read -r
   do
     _args1="$_args1 $(string.quote "$REPLY")"
     _i=$(( $_i + 1 ))
@@ -265,7 +265,7 @@ stream.foreach() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     eval "$_func $(string.quote "$REPLY")$_args" |
       stream.ignore
@@ -281,7 +281,7 @@ stream.filter() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
@@ -303,7 +303,7 @@ stream.filterNot() {
 }
 
 stream.nonEmpty() {
-  while read -r
+  while IFS= read -r
   do
     if ! [ -z "$REPLY" ]
     then
@@ -315,7 +315,7 @@ stream.nonEmpty() {
 stream.length() {
   local _length=0
 
-  while read -r
+  while IFS= read -r
   do
     _length=$(( $_length + 1 ))
   done
@@ -327,7 +327,7 @@ stream.get() {
   local _index="$1"
 
   local _i=0
-  while read -r
+  while IFS= read -r
   do
     if (( $_i == $_index ))
     then
@@ -342,7 +342,7 @@ stream.indexOf() {
   local _elem="$1"
 
   local _i=0
-  while read -r
+  while IFS= read -r
   do
     if [ "$REPLY" == "$_elem" ]
     then
@@ -364,7 +364,7 @@ stream.find() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
@@ -376,7 +376,7 @@ stream.find() {
 
 stream.zipWithIndex() {
   local _i=0
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY $_i"
     _i=$(( $_i + 1 ))
@@ -392,7 +392,7 @@ stream.zipWith() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     _elem="$REPLY"
     eval "$_func $(string.quote "$REPLY")$_args" |
@@ -405,7 +405,7 @@ stream.grouped() {
 
   local _buffer[0]=""
   local _length=0
-  while read -r
+  while IFS= read -r
   do
     _buffer[$_length]="$REPLY"
     _length=$(( $_length + 1 ))
@@ -432,7 +432,7 @@ stream.sortBy() {
 
   local _buffer[0]=""
   local _length=0
-  while read -r
+  while IFS= read -r
   do
     _buffer[$_length]="$REPLY"
     _length=$(( $_length + 1 ))
@@ -486,7 +486,7 @@ stream.last() {
 stream.init() {
   local _first=true
   local _last=""
-  while read -r
+  while IFS= read -r
   do
     if $_first
     then
@@ -505,7 +505,7 @@ stream.tail() {
 stream.take() {
   local _take=$(Option "$1" | stream.getOrElse 1)
 
-  while read -r
+  while IFS= read -r
   do
     if (( $_take > 0 ))
     then
@@ -520,7 +520,7 @@ stream.take() {
 stream.drop() {
   local _drop=$(Option "$1" | stream.getOrElse 1)
 
-  while read -r
+  while IFS= read -r
   do
     if (( $_drop > 0 ))
     then
@@ -539,7 +539,7 @@ stream.takeRight() {
     local _buffer[0]=""
     local _pointer=-1
     local _length=0
-    while read -r
+    while IFS= read -r
     do
       _pointer=$(( ($_pointer + 1) % $_take ))
       _buffer[$_pointer]="$REPLY"
@@ -564,7 +564,7 @@ stream.dropRight() {
     local _buffer[0]=""
     local _pointer=-1
     local _length=0
-    while read -r
+    while IFS= read -r
     do
       _pointer=$(( ($_pointer + 1) % $_drop ))
       if (( $_pointer < $_length ))
@@ -586,7 +586,7 @@ stream.takeWhile() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     if $(eval "$_func $(string.quote "$REPLY")$_args")
     then
@@ -607,7 +607,7 @@ stream.dropWhile() {
   done
 
   local _take=false
-  while read -r
+  while IFS= read -r
   do
     if $_take || ! $(eval "$_func $(string.quote "$REPLY")$_args")
     then
@@ -620,7 +620,7 @@ stream.dropWhile() {
 stream.reverse() {
   local _buffer[0]=""
   local _length=0
-  while read -r
+  while IFS= read -r
   do
     _buffer[$_length]="$REPLY"
     _length=$(( $_length + 1 ))
@@ -638,7 +638,7 @@ stream.repeat() {
 
   local _buffer[0]=""
   local _length=0
-  while read -r
+  while IFS= read -r
   do
     _buffer[$_length]="$REPLY"
     _length=$(( $_length + 1 ))
@@ -665,7 +665,7 @@ stream.foldLeft() {
     _args="$_args $(string.quote "$_elem")"
   done
 
-  while read -r
+  while IFS= read -r
   do
     _acc=$(eval "$_func $(string.quote "$_acc") $(string.quote "$REPLY")$_args")
   done
@@ -677,7 +677,7 @@ stream.intersperse() {
   local _elem="$1"
 
   local _first=true
-  while read -r
+  while IFS= read -r
   do
     if $_first
     then
@@ -695,14 +695,14 @@ stream.prepend() {
     string.println "$_elem"
   done
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
 }
 
 stream.append() {
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
@@ -720,12 +720,12 @@ stream.concat() {
 stream.prependAll() {
   local _stream="$1"
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done <"$_stream"
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
@@ -734,19 +734,19 @@ stream.prependAll() {
 stream.appendAll() {
   local _stream="$1"
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
 
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done <"$_stream"
 }
 
 stream.lines() {
-  while read -r
+  while IFS= read -r
   do
     string.println "$REPLY"
   done
@@ -759,7 +759,7 @@ stream.mkString() {
 
   local _string="$_start"
   local _first=true
-  while read -r
+  while IFS= read -r
   do
     if $_first
     then
