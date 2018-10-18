@@ -95,10 +95,6 @@ string.regexReplaceAll() {
   print "$_string" | perl -C -ple "s/\$ENV{'_regex'}/\$ENV{'_substitution'}/g"
 }
 
-string.matches() {
-
-}
-
 # object stream
 
 Range() {
