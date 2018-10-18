@@ -98,20 +98,15 @@ string.regexReplaceAll() {
 # object stream
 
 Range() {
-  local _incl=false
-  if [ "$1" == "-i" ]
-  then
-    _incl=true
-    shift
-  fi
-
   local _start="$1"
   local _end="$2"
 
-  if ! $_incl
-  then
-    _end="$(($_end - 1))"
-  fi
+  seq "$_start" "$(($_end - 1))"
+}
+
+InclusiveRange() {
+  local _start="$1"
+  local _end="$2"
 
   seq "$_start" "$_end"
 }
