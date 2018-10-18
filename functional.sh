@@ -4,11 +4,21 @@ set -o pipefail
 
 # class string
 
+#deprecated
 string.print() {
   printf '%s' "$1"
 }
 
+print() {
+  printf '%s' "$1"
+}
+
+#deprecated
 string.println() {
+  printf '%s\n' "$1"
+}
+
+println() {
   printf '%s\n' "$1"
 }
 
@@ -16,19 +26,28 @@ string.escapeNewline() {
   local _string="$1"
   local _quoted="${_string//\\/\\\\}"
 
-  string.println "${_quoted//$'\n'/\\n}"
+  println "${_quoted//$'\n'/\\n}"
 }
 
 string.unescapeNewline() {
   local _string="$1"
 
-  string.print "$_string" | perl -C -ple 's/(?<!\\)(\\\\)*\\n/\1\n/g; s/\\\\/\\/g'
+  print "$_string" | perl -C -ple 's/(?<!\\)(\\\\)*\\n/\1\n/g; s/\\\\/\\/g'
 }
 
 string.quote() {
-  local _string="$1"
-
-  string.println "'$(string.regexReplaceAll "$_string" "'" "'\"'\"'")'"
+  local _first=true
+  for _string in "$@"
+  do
+    if $_first
+    then
+      _first=false
+    else
+      print ' '
+    fi
+    print "'$(string.replaceAll "$_string" "'" "'\"'\"'")'"
+  done
+  println ''
 }
 
 string.trim() {
@@ -49,7 +68,7 @@ string.replace() {
   local _pattern="$2"
   local _substitution="$3"
 
-  string.println "${_string/"$_pattern"/$_substitution}"
+  println "${_string/"$_pattern"/$_substitution}"
 }
 
 string.replaceAll() {
@@ -57,7 +76,7 @@ string.replaceAll() {
   local _pattern="$2"
   local _substitution="$3"
 
-  string.println "${_string//"$_pattern"/$_substitution}"
+  println "${_string//"$_pattern"/$_substitution}"
 }
 
 string.regexReplace() {
@@ -65,7 +84,7 @@ string.regexReplace() {
   local _regex="$2"
   local _substitution="$3"
 
-  string.print "$_string" | perl -C -ple "s/$_regex/$_substitution/"
+  print "$_string" | perl -C -ple "s/$_regex/$_substitution/"
 }
 
 string.regexReplaceAll() {
@@ -73,7 +92,7 @@ string.regexReplaceAll() {
   local _regex="$2"
   local _substitution="$3"
 
-  string.print "$_string" | perl -C -ple "s/$_regex/$_substitution/g"
+  print "$_string" | perl -C -ple "s/$_regex/$_substitution/g"
 }
 
 # object stream
@@ -106,7 +125,7 @@ Chars() {
 List() {
   for _elem in "$@"
   do
-    string.println "$_elem"
+    println "$_elem"
   done
 }
 
@@ -115,7 +134,7 @@ Option() {
 
   if ! [ -z "$_elem" ]
   then
-    string.println "$_elem"
+    println "$_elem"
   fi
 }
 
@@ -130,7 +149,7 @@ Variable() {
 
   if ! [ -z ${!_variable+x} ]
   then
-    string.println "${!_variable}"
+    println "${!_variable}"
   fi
 }
 
@@ -144,7 +163,7 @@ Array() {
 
   local _arr="$1"
   local _off=$(Option "$2" | stream.getOrElse 0)
-  local _len=$(Option "$3" | (stream.orElse <(eval string.println $\{#$_arr[@]\})))
+  local _len=$(Option "$3" | (stream.orElse <(eval println $\{#$_arr[@]\})))
 
   for _i in $(Range $_off $(( $_off + $_len )))
   do
@@ -153,7 +172,7 @@ Array() {
     then
       string.escapeNewline "${!_elem}"
     else
-      string.println "${!_elem}"
+      println "${!_elem}"
     fi
   done
 }
@@ -162,10 +181,9 @@ Array() {
 
 stream.isEmpty() {
   local _empty=true
-
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
     _empty=false
   done
 
@@ -177,7 +195,7 @@ stream.getOrElse() {
 
   if stream.isEmpty
   then
-    string.println "$_elem"
+    println "$_elem"
   fi
 }
 
@@ -188,7 +206,7 @@ stream.orElse() {
   then
     while IFS= read -r
     do
-      string.println "$REPLY"
+      println "$REPLY"
     done <"$_stream"
   fi
 }
@@ -207,7 +225,7 @@ stream.if() {
 stream.identity() {
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 }
 
@@ -221,15 +239,11 @@ stream.ignore() {
 stream.map() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    (eval "$_func $(string.quote "$REPLY")$_args")
+    (eval "$_func $(string.quote "$REPLY") $_args")
   done
 }
 
@@ -237,11 +251,7 @@ stream.mapN() {
   local _length="$1"
   local _func="$2"
   shift 2
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   local _i=0
   local _args1=""
@@ -252,7 +262,7 @@ stream.mapN() {
     if (( $_i >= $_length ))
     then
       _i=0
-      (eval "$_func$_args1$_args")
+      (eval "$_func$_args1 $_args")
       _args1=""
     fi
   done
@@ -261,15 +271,11 @@ stream.mapN() {
 stream.foreach() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    eval "$_func $(string.quote "$REPLY")$_args" |
+    eval "$_func $(string.quote "$REPLY") $_args" |
       stream.ignore
   done
 }
@@ -277,17 +283,13 @@ stream.foreach() {
 stream.filter() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    if $(eval "$_func $(string.quote "$REPLY")$_args")
+    if $(eval "$_func $(string.quote "$REPLY") $_args")
     then
-      string.println "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -295,11 +297,7 @@ stream.filter() {
 stream.filterNot() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   stream.filter "! $_func" $_args
 }
@@ -309,7 +307,7 @@ stream.nonEmpty() {
   do
     if ! [ -z "$REPLY" ]
     then
-      string.println "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -322,7 +320,7 @@ stream.length() {
     _length=$(( $_length + 1 ))
   done
 
-  string.println $_length
+  println $_length
 }
 
 stream.get() {
@@ -333,7 +331,7 @@ stream.get() {
   do
     if (( $_i == $_index ))
     then
-      string.println "$REPLY"
+      println "$REPLY"
       break
     fi
     _i=$(( $_i + 1 ))
@@ -348,29 +346,25 @@ stream.indexOf() {
   do
     if [ "$REPLY" == "$_elem" ]
     then
-      string.println $_i
+      println $_i
       return
     fi
     _i=$(( $_i + 1 ))
   done
 
-  string.println -1
+  println -1
 }
 
 stream.find() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    if $(eval "$_func $(string.quote "$REPLY")$_args")
+    if $(eval "$_func $(string.quote "$REPLY") $_args")
     then
-      string.println "$REPLY"
+      println "$REPLY"
       break
     fi
   done
@@ -380,7 +374,7 @@ stream.zipWithIndex() {
   local _i=0
   while IFS= read -r
   do
-    string.println "$REPLY $_i"
+    println "$REPLY $_i"
     _i=$(( $_i + 1 ))
   done
 }
@@ -388,17 +382,13 @@ stream.zipWithIndex() {
 stream.zipWith() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
     _elem="$REPLY"
-    eval "$_func $(string.quote "$REPLY")$_args" |
-      (F(){ string.println "$_elem $1"; }; stream.map F)
+    eval "$_func $(string.quote "$REPLY") $_args" |
+      (F(){ println "$_elem $1"; }; stream.map F)
   done
 }
 
@@ -446,12 +436,12 @@ stream.sortBy() {
       local _i=$(List $1 | stream.last)
       local _e=$(Chars "$1" | stream.dropRight $(( $(Chars "$_i" | stream.length) + 1 )) | stream.mkString | stream.map string.quote)
       local _by=$(eval "$_func2 $_e")
-      string.println "$_by $_i"
+      println "$_by $_i"
     }; stream.map _lambda) |
     stream.sorted -k1,1 $_options |
     (F(){
       local _i=$(List $1 | stream.last)
-      string.println "${_buffer[$_i]}"
+      println "${_buffer[$_i]}"
     }; stream.map F)
 }
 
@@ -494,7 +484,7 @@ stream.init() {
     then
       _first=false
     else
-      string.println "$_last"
+      println "$_last"
     fi
     _last="$REPLY"
   done
@@ -511,7 +501,7 @@ stream.take() {
   do
     if (( $_take > 0 ))
     then
-      string.println "$REPLY"
+      println "$REPLY"
     else
       break
     fi
@@ -528,7 +518,7 @@ stream.drop() {
     then
       _drop=$(( $_drop - 1 ))
     else
-      string.println "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -551,7 +541,7 @@ stream.takeRight() {
     for i in $(seq 1 $_length)
     do
       _pointer=$(( ($_pointer + 1) % $_length ))
-      string.println "${_buffer[$_pointer]}"
+      println "${_buffer[$_pointer]}"
     done
   fi
 }
@@ -571,7 +561,7 @@ stream.dropRight() {
       _pointer=$(( ($_pointer + 1) % $_drop ))
       if (( $_pointer < $_length ))
       then
-        string.println "${_buffer[$_pointer]}"
+        println "${_buffer[$_pointer]}"
       fi
       _buffer[$_pointer]="$REPLY"
       if (( $_length < $_drop )); then _length=$(( $_length + 1 )); fi
@@ -582,17 +572,13 @@ stream.dropRight() {
 stream.takeWhile() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    if $(eval "$_func $(string.quote "$REPLY")$_args")
+    if $(eval "$_func $(string.quote "$REPLY") $_args")
     then
-      string.println "$REPLY"
+      println "$REPLY"
     else
       break
     fi
@@ -602,19 +588,15 @@ stream.takeWhile() {
 stream.dropWhile() {
   local _func="$1"
   shift
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   local _take=false
   while IFS= read -r
   do
-    if $_take || ! $(eval "$_func $(string.quote "$REPLY")$_args")
+    if $_take || ! $(eval "$_func $(string.quote "$REPLY") $_args")
     then
       _take=true
-      string.println "$REPLY"
+      println "$REPLY"
     fi
   done
 }
@@ -631,7 +613,7 @@ stream.reverse() {
   while (( _length > 0 ))
   do
     _length=$(( $_length - 1 ))
-    string.println "${_buffer[$_length]}"
+    println "${_buffer[$_length]}"
   done
 }
 
@@ -651,7 +633,7 @@ stream.repeat() {
     local _index=0
     while (( _index < _length ))
     do
-      string.println "${_buffer[$_index]}"
+      println "${_buffer[$_index]}"
       _index=$(( $_index + 1 ))
     done
   done
@@ -661,18 +643,14 @@ stream.foldLeft() {
   local _acc="$1"
   local _func="$2"
   shift 2
-  local _args=""
-  for _elem in "$@"
-  do
-    _args="$_args $(string.quote "$_elem")"
-  done
+  local _args="$(string.quote "$@")"
 
   while IFS= read -r
   do
-    _acc=$(eval "$_func $(string.quote "$_acc") $(string.quote "$REPLY")$_args")
+    _acc=$(eval "$_func $(string.quote "$_acc") $(string.quote "$REPLY") $_args")
   done
 
-  string.println "$_acc"
+  println "$_acc"
 }
 
 stream.intersperse() {
@@ -685,33 +663,33 @@ stream.intersperse() {
     then
       _first=false
     else
-      string.println "$_elem"
+      println "$_elem"
     fi
-    string.println "$REPLY"
+    println "$REPLY"
   done
 }
 
 stream.prepend() {
   for _elem in "$@"
   do
-    string.println "$_elem"
+    println "$_elem"
   done
 
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 }
 
 stream.append() {
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 
   for _elem in "$@"
   do
-    string.println "$_elem"
+    println "$_elem"
   done
 }
 
@@ -724,12 +702,12 @@ stream.prependAll() {
 
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done <"$_stream"
 
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 }
 
@@ -738,19 +716,19 @@ stream.appendAll() {
 
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done <"$_stream"
 }
 
 stream.lines() {
   while IFS= read -r
   do
-    string.println "$REPLY"
+    println "$REPLY"
   done
 }
 
@@ -772,17 +750,17 @@ stream.mkString() {
     fi
   done
 
-  string.println "$_string$_end"
+  println "$_string$_end"
 }
 
 stream.toString() {
-  stream.mkString "" "" ""
+  stream.mkString ""
 }
 
 stream.toList() {
-  stream.mkString " " "" ""
+  stream.mkString " "
 }
 
 stream.toLines() {
-  stream.mkString $'\n' "" ""
+  stream.mkString $'\n'
 }
