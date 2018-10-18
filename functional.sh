@@ -82,17 +82,17 @@ string.replaceAll() {
 string.regexReplace() {
   local _string="$1"
   local -x _regex="$2"
-  local -x _substitution="$3"
+  local -x _substitution="\"$3\""
 
-  print "$_string" | perl -C -ple "s/\$ENV{'_regex'}/\$ENV{'_substitution'}/"
+  print "$_string" | perl -C -ple "s/\$ENV{'_regex'}/\$ENV{'_substitution'}/ee"
 }
 
 string.regexReplaceAll() {
   local _string="$1"
   local -x _regex="$2"
-  local -x _substitution="$3"
+  local -x _substitution="\"$3\""
 
-  print "$_string" | perl -C -ple "s/\$ENV{'_regex'}/\$ENV{'_substitution'}/g"
+  print "$_string" | perl -C -ple "s/\$ENV{'_regex'}/\$ENV{'_substitution'}/eeg"
 }
 
 # object stream
