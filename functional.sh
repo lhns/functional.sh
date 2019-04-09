@@ -53,7 +53,7 @@ string.quote() {
 string.trim() {
   local _string="$1"
 
-  string.regexReplaceAll "$_string" '^ *| *$' ''
+  string.regexReplaceAll "$_string" '^\s*|\s*$' ''
 }
 
 string.split() {
