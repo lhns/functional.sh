@@ -84,7 +84,7 @@ string.regexReplace() {
   local _regex="$2"
   local _substitution="$3"
 
-  print "$_string" | perl -C -ple "s/${_regex/\//\\\/}/${_substitution/\//\\\/}/"
+  print "$_string" | perl -C -ple "s/${_regex/\//\\\/}/${_substitution/\//$(echo '\/')}/"
 }
 
 string.regexReplaceAll() {
@@ -92,7 +92,7 @@ string.regexReplaceAll() {
   local _regex="$2"
   local _substitution="$3"
 
-  print "$_string" | perl -C -ple "s/${_regex/\//\\\/}/${_substitution/\//\\\/}/g"
+  print "$_string" | perl -C -ple "s/${_regex/\//\\\/}/${_substitution/\//$(echo '\/')}/g"
 }
 
 # object stream
