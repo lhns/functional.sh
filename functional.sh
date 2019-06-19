@@ -596,6 +596,18 @@ stream.dropWhile() {
   done
 }
 
+stream.takeRightWhile() {
+  stream.reverse |
+  stream.takeWhile "$@" |
+  stream.reverse
+}
+
+stream.dropRightWhile() {
+  stream.reverse |
+  stream.dropWhile "$@" |
+  stream.reverse
+}
+
 stream.reverse() {
   local _buffer[0]=""
   local _length=0
